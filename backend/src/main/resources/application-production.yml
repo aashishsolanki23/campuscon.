@@ -1,0 +1,84 @@
+spring:
+  # Database configuration for production
+  datasource:
+    url: jdbc:mysql://${RDS_HOSTNAME:localhost}:${RDS_PORT:3306}/${RDS_DB_NAME:campuscon}
+    username: ${RDS_USERNAME:root}
+    password: ${RDS_PASSWORD:password}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      idle-timeout: 600000
+      connection-timeout: 30000
+  
+  # JPA configuration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        jdbc.batch_size: 50
+        order_inserts: true
+        order_updates: true
+  
+  # Redis for caching and websocket sessions
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    timeout: 2000
+  
+  # Security settings
+  security:
+    jwt:
+      secret: ${JWT_SECRET:changemeInProduction}
+      expiration: 86400000 # 24 hours
+  
+  # Server configuration
+  server:
+    error:
+      include-stacktrace: never
+      include-message: never
+    tomcat:
+      max-threads: 200
+      min-spare-threads: 20
+    compression:
+      enabled: true
+      mime-types: application/json,application/xml,text/html,text/plain
+      min-response-size: 2048
+
+# AWS Configuration
+aws:
+  access-key: ${AWS_ACCESS_KEY:}
+  secret-key: ${AWS_SECRET_KEY:}
+  region: ${AWS_REGION:us-east-1}
+  s3:
+    bucket: ${S3_BUCKET:campuscon-media}
+
+# FCM Configuration for notifications
+firebase:
+  config:
+    path: ${FCM_CONFIG_PATH:firebase-service-account.json}
+
+# Logging configuration
+logging:
+  level:
+    root: WARN
+    com.campuscon: INFO
+    org.springframework.web: WARN
+    org.hibernate: ERROR
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE_PATH:/var/log/campuscon/application.log}
+    max-size: 10MB
+    max-history: 10
+
+# CORS Configuration
+cors:
+  allowed-origins: ${ALLOWED_ORIGINS:https://campuscon.com,https://www.campuscon.com}
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true
+  max-age: 3600

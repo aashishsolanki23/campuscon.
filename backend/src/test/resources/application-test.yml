@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MySQL
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+  
+  # Disable Redis for tests
+  data:
+    redis:
+      repositories:
+        enabled: false
+
+  # Disable mail for tests  
+  mail:
+    host: localhost
+    port: 3025
+    username: test
+    password: test
+
+# JWT testing config
+jwt:
+  secret: test-secret-key-minimum-32-characters-long-for-testing
+  expiration: 3600000 # 1 hour in milliseconds
+
+# Set test server port
+server:
+  port: 0 # random port for testing
