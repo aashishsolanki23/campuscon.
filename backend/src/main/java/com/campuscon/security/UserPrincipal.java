@@ -1,7 +1,7 @@
 package com.campuscon.security;
 
 import com.campuscon.model.User;
-import com.campuscon.model.User.UserRole;
+import java.util.Set;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,15 +30,15 @@ public class UserPrincipal implements UserDetails {
     private Collection<? extends GrantedAuthority> authorities;
     
     // Additional fields for CampusCon
-    private UserRole role;
-    private Boolean isSociety;
+    private Set<String> userTypes;
     private String profilePictureUrl;
     private String collegeName;
-    private String universityName;
     private Boolean isEmailVerified;
     private String rollNumber;
     private String batchYear;
     private String courseCode;
+    private String organizationRole;
+    private String displayName;
 
     /**
      * Create a UserPrincipal from User entity
@@ -53,15 +53,11 @@ public class UserPrincipal implements UserDetails {
                 .email(user.getEmail())
                 .password(user.getPassword())
                 .authorities(authorities)
-                .role(user.getRole())
-                .isSociety(user.isSociety())
+                .userTypes(user.getUserTypes())
                 .profilePictureUrl(user.getProfilePictureUrl())
                 .collegeName(user.getCollegeName())
-                .universityName(user.getUniversityName())
                 .isEmailVerified(user.isEmailVerified())
-                .rollNumber(user.getRollNumber())
-                .batchYear(user.getBatchYear())
-                .courseCode(user.getCourseCode())
+                .displayName(user.getDisplayName())
                 .build();
     }
 

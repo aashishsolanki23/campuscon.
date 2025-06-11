@@ -1,7 +1,7 @@
 package com.campuscon.enums;
 
 /**
- * Represents the status of content (Bricks, Deeds)
+ * Represents the status of content (Deeds)
  * Used for content moderation and visibility control
  */
 public enum ContentStatus {

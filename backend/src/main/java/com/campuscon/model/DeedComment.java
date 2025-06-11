@@ -42,8 +42,7 @@ public class DeedComment {
     @OneToMany(mappedBy = "parentComment", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<DeedComment> replies = new ArrayList<>();
     
-    @Column(name = "likes_count")
-    private long likesCount;
+    // likesCount field has been removed
     
     @Column(name = "is_moderated")
     private boolean isModerated;
@@ -56,13 +55,5 @@ public class DeedComment {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
     
-    public void incrementLikesCount() {
-        this.likesCount++;
-    }
-    
-    public void decrementLikesCount() {
-        if (this.likesCount > 0) {
-            this.likesCount--;
-        }
-    }
+    // Likes-related methods have been removed
 }

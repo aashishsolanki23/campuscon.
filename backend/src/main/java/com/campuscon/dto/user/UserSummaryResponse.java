@@ -18,7 +18,8 @@ public class UserSummaryResponse {
     private String username;
     private String name;
     private String profilePictureUrl;
-    private boolean societyRole;
+    // Removed societyRole field as part of unified user model
     private Long bondsCount;
-    private Long likesCount;
+    // likesCount field has been removed
+    private String role; // User role (USER, ADMIN, MODERATOR)
 }

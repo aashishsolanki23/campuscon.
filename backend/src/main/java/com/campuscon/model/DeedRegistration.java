@@ -30,10 +30,6 @@ public class DeedRegistration {
     @Column(nullable = false)
     private LocalDateTime registeredAt;
     
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private RegistrationStatus status;
-    
     // Additional fields for registration data
     private String teamName;
     private Integer teamSize;
@@ -41,20 +37,8 @@ public class DeedRegistration {
     @Column(columnDefinition = "TEXT")
     private String additionalInfo;
     
-    @Column(columnDefinition = "TEXT")
-    private String rejectionReason;
-    
-    public enum RegistrationStatus {
-        PENDING,
-        APPROVED,
-        REJECTED
-    }
-    
     @PrePersist
     protected void onCreate() {
         registeredAt = LocalDateTime.now();
-        if (status == null) {
-            status = RegistrationStatus.PENDING;
-        }
     }
 }

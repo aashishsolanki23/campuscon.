@@ -1,10 +1,8 @@
 package com.campuscon.service;
 
-import com.campuscon.model.Brick;
 import com.campuscon.model.Deed;
 import com.campuscon.model.SavedItem;
 import com.campuscon.model.User;
-import com.campuscon.repository.BrickRepository;
 import com.campuscon.repository.DeedRepository;
 import com.campuscon.repository.SavedItemRepository;
 import com.campuscon.repository.UserRepository;
@@ -23,7 +21,6 @@ public class SavedItemService {
 
     private final SavedItemRepository savedItemRepository;
     private final UserRepository userRepository;
-    private final BrickRepository brickRepository;
     private final DeedRepository deedRepository;
 
     /**
@@ -47,13 +44,6 @@ public class SavedItemService {
     }
 
     /**
-     * Get saved bricks by user
-     */
-    public Page<Brick> getSavedBricks(Long userId, Pageable pageable) {
-        return brickRepository.findSavedBricksByUserId(userId, pageable);
-    }
-
-    /**
      * Get saved deeds by user
      */
     public Page<Deed> getSavedDeeds(Long userId, Pageable pageable) {
@@ -61,70 +51,70 @@ public class SavedItemService {
     }
 
     /**
-     * Get saved societies by user
+     * Get saved users by user
      */
-    public List<User> getSavedSocieties(Long userId, Pageable pageable) {
+    public List<User> getSavedUsers(Long userId, Pageable pageable) {
         // Verify user exists
         userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         
-        // Get IDs of saved societies
-        List<Long> societyIds = savedItemRepository.findItemIdsByUserIdAndItemType(userId, SavedItem.ItemType.SOCIETY);
+        // Get IDs of saved users
+        List<Long> userIds = savedItemRepository.findItemIdsByUserIdAndItemType(userId, SavedItem.ItemType.USER);
         
-        // Return society users
-        return userRepository.findAllById(societyIds);
+        // Return saved users
+        return userRepository.findAllById(userIds);
     }
 
     /**
-     * Save a society
+     * Save a user to favorites
      */
     @Transactional
-    public void saveSociety(Long userId, Long societyId) {
+    public void saveUser(Long userId, Long targetUserId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         
-        User society = userRepository.findById(societyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Society not found"));
-        
-        // Verify if the user to save is a society
-        if (!society.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_SOCIETY"))) {
-            throw new IllegalArgumentException("Can only save society accounts");
-        }
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new ResourceNotFoundException("User to save not found"));
         
         // Check if already saved
-        if (savedItemRepository.findByUserAndItemTypeAndItemId(user, SavedItem.ItemType.SOCIETY, societyId).isPresent()) {
+        if (savedItemRepository.findByUserAndItemTypeAndItemId(user, SavedItem.ItemType.USER, targetUserId).isPresent()) {
             return; // Already saved
         }
         
-        // Save the society
+        // Validate targetUser exists and is a valid user to save
+        if (targetUser.getId().equals(user.getId())) {
+            throw new IllegalArgumentException("Cannot save yourself");
+        }
+        
+        // Save the user
         SavedItem savedItem = SavedItem.builder()
                 .user(user)
-                .itemType(SavedItem.ItemType.SOCIETY)
-                .itemId(societyId)
+                .itemType(SavedItem.ItemType.USER)
+                .itemId(targetUserId)
                 .build();
         
         savedItemRepository.save(savedItem);
     }
 
     /**
-     * Unsave a society
+     * Unsave a user from favorites
      */
     @Transactional
-    public void unsaveSociety(Long userId, Long societyId) {
+    public void unsaveUser(Long userId, Long targetUserId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         
-        savedItemRepository.deleteByUserAndItemTypeAndItemId(user, SavedItem.ItemType.SOCIETY, societyId);
+        savedItemRepository.deleteByUserAndItemTypeAndItemId(user, SavedItem.ItemType.USER, targetUserId);
     }
 
     /**
-     * Check if a society is saved by user
+     * Check if a user is saved by another user
      */
-    public boolean isSocietySavedByUser(Long userId, Long societyId) {
+    public boolean isUserSavedByUser(Long userId, Long targetUserId) {
         return savedItemRepository.findByUserAndItemTypeAndItemId(
                 userRepository.getReferenceById(userId), 
-                SavedItem.ItemType.SOCIETY, 
-                societyId
+                SavedItem.ItemType.USER, 
+                targetUserId
         ).isPresent();
     }
 
@@ -153,20 +143,8 @@ public class SavedItemService {
         
         savedItemRepository.delete(savedItem);
         
-        // Update the item's save count if it's a brick or deed
-        if (savedItem.getItemType() == SavedItem.ItemType.BRICK) {
-            brickRepository.findById(savedItem.getItemId()).ifPresent(brick -> {
-                // Get a fully loaded user entity instead of a reference proxy
-                User user = userRepository.findById(userId).orElseThrow(
-                    () -> new ResourceNotFoundException("User not found"));
-                
-                // Remove user from the savedByUsers collection
-                if (brick.getSavedByUsers().remove(user)) {
-                    brick.decrementSavesCount();
-                    brickRepository.save(brick);
-                }
-            });
-        } else if (savedItem.getItemType() == SavedItem.ItemType.DEED) {
+        // Update the item's save count if it's a deed
+        if (savedItem.getItemType() == SavedItem.ItemType.DEED) {
             deedRepository.findById(savedItem.getItemId()).ifPresent(deed -> {
                 // Get a fully loaded user entity instead of a reference proxy
                 User user = userRepository.findById(userId).orElseThrow(

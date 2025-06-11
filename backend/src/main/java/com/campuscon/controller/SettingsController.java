@@ -24,7 +24,7 @@ public class SettingsController {
      * Get profile settings for the current user
      */
     @GetMapping("/profile")
-    @PreAuthorize("hasRole('USER') or hasRole('SOCIETY')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<ProfileSettingsResponse>> getProfileSettings(@CurrentUser UserPrincipal currentUser) {
         ProfileSettingsResponse response = settingsService.getProfileSettings(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success(response, "Profile settings retrieved successfully"));
@@ -34,7 +34,7 @@ public class SettingsController {
      * Update profile settings for the current user
      */
     @PutMapping("/profile")
-    @PreAuthorize("hasRole('USER') or hasRole('SOCIETY')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<ProfileSettingsResponse>> updateProfileSettings(
             @CurrentUser UserPrincipal currentUser,
             @RequestBody ProfileSettingsRequest request) {
@@ -46,7 +46,7 @@ public class SettingsController {
      * Get notification settings for the current user
      */
     @GetMapping("/notifications")
-    @PreAuthorize("hasRole('USER') or hasRole('SOCIETY')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<NotificationSettingsResponse>> getNotificationSettings(@CurrentUser UserPrincipal currentUser) {
         NotificationSettingsResponse response = settingsService.getNotificationSettings(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success(response, "Notification settings retrieved successfully"));
@@ -56,7 +56,7 @@ public class SettingsController {
      * Update notification settings for the current user
      */
     @PutMapping("/notifications")
-    @PreAuthorize("hasRole('USER') or hasRole('SOCIETY')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<NotificationSettingsResponse>> updateNotificationSettings(
             @CurrentUser UserPrincipal currentUser,
             @RequestBody NotificationSettingsRequest request) {
@@ -68,7 +68,7 @@ public class SettingsController {
      * Get app preferences for the current user
      */
     @GetMapping("/preferences")
-    @PreAuthorize("hasRole('USER') or hasRole('SOCIETY')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<AppPreferencesResponse>> getAppPreferences(@CurrentUser UserPrincipal currentUser) {
         AppPreferencesResponse response = settingsService.getAppPreferences(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success(response, "App preferences retrieved successfully"));
@@ -78,7 +78,7 @@ public class SettingsController {
      * Update app preferences for the current user
      */
     @PutMapping("/preferences")
-    @PreAuthorize("hasRole('USER') or hasRole('SOCIETY')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<AppPreferencesResponse>> updateAppPreferences(
             @CurrentUser UserPrincipal currentUser,
             @RequestBody AppPreferencesRequest request) {

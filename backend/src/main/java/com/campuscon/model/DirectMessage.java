@@ -19,6 +19,15 @@ public class DirectMessage {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
+    
+    @Column(name = "image_url")
+    private String imageUrl;
+    
+    @Column(name = "url")
+    private String url;
+    
+    @Column(name = "url_metadata", columnDefinition = "TEXT")
+    private String urlMetadata;
 
     @ManyToOne
     @JoinColumn(name = "sender_id", nullable = false)

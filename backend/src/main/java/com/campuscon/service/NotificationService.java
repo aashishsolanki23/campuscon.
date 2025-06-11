@@ -1,6 +1,5 @@
 package com.campuscon.service;
 
-import com.campuscon.model.Brick;
 import com.campuscon.model.ChatGroup;
 import com.campuscon.model.Deed;
 import com.campuscon.model.User;
@@ -9,27 +8,40 @@ import com.campuscon.repository.UserRepository;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class NotificationService {
     private final SimpMessagingTemplate messagingTemplate;
     private final UserRepository userRepository;
     private final DeedRepository deedRepository;
     private final FirebaseMessaging firebaseMessaging;
+
+    private final ExecutorService executorService;
     
-    private final ExecutorService executorService = Executors.newCachedThreadPool();
+    public NotificationService(
+            SimpMessagingTemplate messagingTemplate,
+            UserRepository userRepository,
+            DeedRepository deedRepository,
+            FirebaseMessaging firebaseMessaging) {
+        this.messagingTemplate = messagingTemplate;
+        this.userRepository = userRepository;
+        this.deedRepository = deedRepository;
+        this.firebaseMessaging = firebaseMessaging;
+
+        this.executorService = Executors.newCachedThreadPool();
+    }
     
     @Value("${app.notifications.enabled:true}")
     private boolean notificationsEnabled;
@@ -205,52 +217,118 @@ public class NotificationService {
      * Truncate message to a preview length
      */
     private String truncateMessage(String message) {
-        final int MAX_LENGTH = 50;
-        if (message == null) {
-            return "";
-        }
-        if (message.length() <= MAX_LENGTH) {
-            return message;
-        }
-        
-        return message.substring(0, MAX_LENGTH) + "...";
+        if (message == null) return "";
+        return message.length() > 50 ? message.substring(0, 47) + "..." : message;
     }
     
     /**
-     * Send a notification when someone likes a deed
+     * Send a notification to an individual participant when they are shortlisted for the next round
+     * 
+     * @param participantId The participant user ID
+     * @param deedId The deed ID
+     * @param roundNumber The next round number the participant has been shortlisted for
      */
-    public void sendDeedLikeNotification(User society, User liker, Deed deed) {
+    public void sendParticipantShortlistNotification(Long participantId, Long deedId, int roundNumber) {
         if (!notificationsEnabled) return;
         
-        executorService.submit(() -> {
-            // WebSocket notification
-            Map<String, Object> notification = new HashMap<>();
-            notification.put("type", "DEED_LIKE");
-            notification.put("likerId", liker.getId());
-            notification.put("likerName", liker.getUsername());
-            notification.put("deedId", deed.getId());
-            notification.put("deedTitle", deed.getTitle());
-            
-            // Send via WebSocket
-            messagingTemplate.convertAndSendToUser(
-                    society.getId().toString(),
-                    "/queue/notifications",
-                    notification
-            );
-            
-            // Send via FCM if device token is available
-            sendFcmNotification(society, 
-                    liker.getUsername() + " liked your deed", 
-                    deed.getTitle(),
-                    "DEED_LIKE"
-            );
+        userRepository.findById(participantId).ifPresent(participant -> {
+            deedRepository.findById(deedId).ifPresent(deed -> {
+                executorService.submit(() -> {
+                    try {
+                        String title = deed.getTitle();
+                        String message = "Congratulations! You have been shortlisted for round " + roundNumber + ". All the best!";
+                        
+                        // WebSocket notification
+                        Map<String, Object> notification = new HashMap<>();
+                        notification.put("type", "PARTICIPANT_SHORTLISTED");
+                        notification.put("deedId", deedId);
+                        notification.put("deedTitle", title);
+                        notification.put("roundNumber", roundNumber);
+                        notification.put("message", message);
+                        
+                        // Send via WebSocket
+                        messagingTemplate.convertAndSendToUser(
+                                participant.getId().toString(),
+                                "/queue/notifications",
+                                notification
+                        );
+                        
+                        // Send via FCM if device token is available
+                        sendFcmNotification(participant, 
+                                "Shortlisted for " + title, 
+                                message,
+                                "PARTICIPANT_SHORTLISTED"
+                        );
+                        
+                        log.info("Sent shortlist notification to participant {} for deed {}", participantId, deedId);
+                    } catch (Exception e) {
+                        log.error("Error sending participant shortlist notification", e);
+                    }
+                });
+            });
         });
     }
     
     /**
+     * Send a notification to all team members when they are shortlisted for the next round
+     * 
+     * @param deedId The deed ID
+     * @param teamId The team ID
+     * @param roundNumber The next round number
+     */
+    public void sendTeamShortlistedNotification(Long deedId, Long teamId, Integer roundNumber) {
+        if (!notificationsEnabled) return;
+        
+        deedRepository.findById(deedId).ifPresent(deed -> {
+            // Get all users from the team
+            executorService.submit(() -> {
+                try {
+                    // Find all members of the team
+                    List<User> teamMembers = userRepository.findByTeamId(teamId);
+                    String title = deed.getTitle();
+                    String message = "Congratulations! You have been shortlisted for the next round. All the best!";
+                    
+                    // Chat group notification removed (inGroup system deleted)
+                    
+                    for (User member : teamMembers) {
+                        // WebSocket notification
+                        Map<String, Object> notification = new HashMap<>();
+                        notification.put("type", "TEAM_SHORTLISTED");
+                        notification.put("deedId", deedId);
+                        notification.put("deedTitle", title);
+                        notification.put("teamId", teamId);
+                        notification.put("roundNumber", roundNumber);
+                        notification.put("message", message);
+                        
+                        // Send via WebSocket
+                        messagingTemplate.convertAndSendToUser(
+                                member.getId().toString(),
+                                "/queue/notifications",
+                                notification
+                        );
+                        
+                        // Send via FCM if device token is available
+                        sendFcmNotification(member, 
+                                "Team Shortlisted for " + title, 
+                                message,
+                                "TEAM_SHORTLISTED"
+                        );
+                    }
+                    
+                    log.info("Sent shortlist notifications to team {} for deed {}", teamId, deedId);
+                } catch (Exception e) {
+                    log.error("Error sending shortlist notifications", e);
+                }
+            });
+        });
+    }
+    
+    // Like notification methods have been removed
+    
+    /**
      * Send a notification when someone comments on a deed
      */
-    public void sendDeedCommentNotification(User society, User commenter, Deed deed) {
+    public void sendDeedCommentNotification(User creator, User commenter, Deed deed) {
         if (!notificationsEnabled) return;
         
         executorService.submit(() -> {
@@ -264,13 +342,13 @@ public class NotificationService {
             
             // Send via WebSocket
             messagingTemplate.convertAndSendToUser(
-                    society.getId().toString(),
+                    creator.getId().toString(),
                     "/queue/notifications",
                     notification
             );
             
             // Send via FCM if device token is available
-            sendFcmNotification(society, 
+            sendFcmNotification(creator, 
                     commenter.getUsername() + " commented on your deed", 
                     deed.getTitle(),
                     "DEED_COMMENT"
@@ -281,7 +359,7 @@ public class NotificationService {
     /**
      * Send a notification when someone registers for a deed
      */
-    public void sendDeedRegistrationNotification(User society, User registrant, Deed deed) {
+    public void sendDeedRegistrationNotification(User creator, User registrant, Deed deed) {
         if (!notificationsEnabled) return;
         
         executorService.submit(() -> {
@@ -295,13 +373,13 @@ public class NotificationService {
             
             // Send via WebSocket
             messagingTemplate.convertAndSendToUser(
-                    society.getId().toString(),
+                    creator.getId().toString(),
                     "/queue/notifications",
                     notification
             );
             
             // Send via FCM if device token is available
-            sendFcmNotification(society, 
+            sendFcmNotification(creator, 
                     registrant.getUsername() + " registered for your deed", 
                     deed.getTitle(),
                     "DEED_REGISTRATION"
@@ -321,8 +399,8 @@ public class NotificationService {
             notification.put("type", "DEED_REGISTRATION_APPROVED");
             notification.put("deedId", deed.getId());
             notification.put("deedTitle", deed.getTitle());
-            notification.put("societyId", deed.getSociety().getId());
-            notification.put("societyName", deed.getSociety().getUsername());
+            notification.put("creatorId", deed.getCreator().getId());
+            notification.put("creatorName", deed.getCreator().getUsername());
             
             // Send via WebSocket
             messagingTemplate.convertAndSendToUser(
@@ -352,8 +430,8 @@ public class NotificationService {
             notification.put("type", "DEED_REGISTRATION_REJECTED");
             notification.put("deedId", deed.getId());
             notification.put("deedTitle", deed.getTitle());
-            notification.put("societyId", deed.getSociety().getId());
-            notification.put("societyName", deed.getSociety().getUsername());
+            notification.put("creatorId", deed.getCreator().getId());
+            notification.put("creatorName", deed.getCreator().getUsername());
             notification.put("reason", reason);
             
             // Send via WebSocket
@@ -375,7 +453,7 @@ public class NotificationService {
     /**
      * Send a notification when registration is cancelled
      */
-    public void sendDeedRegistrationCancelledNotification(User society, User registrant, Deed deed) {
+    public void sendDeedRegistrationCancelledNotification(User creator, User registrant, Deed deed) {
         if (!notificationsEnabled) return;
         
         executorService.submit(() -> {
@@ -389,13 +467,13 @@ public class NotificationService {
             
             // Send via WebSocket
             messagingTemplate.convertAndSendToUser(
-                    society.getId().toString(),
+                    creator.getId().toString(),
                     "/queue/notifications",
                     notification
             );
             
             // Send via FCM if device token is available
-            sendFcmNotification(society, 
+            sendFcmNotification(creator, 
                     registrant.getUsername() + " cancelled registration", 
                     "For deed: " + deed.getTitle(),
                     "DEED_REGISTRATION_CANCELLED"
@@ -419,8 +497,8 @@ public class NotificationService {
                     notification.put("type", "DEED_REGISTRATION_APPROVED");
                     notification.put("deedId", deedId);
                     notification.put("deedTitle", deedTitle);
-                    notification.put("societyId", deed.getSociety().getId());
-                    notification.put("societyName", deed.getSociety().getUsername());
+                    notification.put("creatorId", deed.getCreator().getId());
+                    notification.put("creatorName", deed.getCreator().getUsername());
                     
                     // Send via WebSocket
                     messagingTemplate.convertAndSendToUser(
@@ -440,65 +518,5 @@ public class NotificationService {
         });
     }
     
-    /**
-     * Send a notification when someone likes a brick
-     */
-    public void sendBrickLikeNotification(User owner, User liker, Brick brick) {
-        if (!notificationsEnabled) return;
-        
-        executorService.submit(() -> {
-            // WebSocket notification
-            Map<String, Object> notification = new HashMap<>();
-            notification.put("type", "BRICK_LIKE");
-            notification.put("likerId", liker.getId());
-            notification.put("likerName", liker.getUsername());
-            notification.put("brickId", brick.getId());
-            notification.put("brickTitle", brick.getTitle());
-            
-            // Send via WebSocket
-            messagingTemplate.convertAndSendToUser(
-                    owner.getId().toString(),
-                    "/queue/notifications",
-                    notification
-            );
-            
-            // Send via FCM if device token is available
-            sendFcmNotification(owner, 
-                    liker.getUsername() + " liked your brick", 
-                    brick.getTitle(),
-                    "BRICK_LIKE"
-            );
-        });
-    }
-    
-    /**
-     * Send a notification when someone comments on a brick
-     */
-    public void sendBrickCommentNotification(User owner, User commenter, Brick brick) {
-        if (!notificationsEnabled) return;
-        
-        executorService.submit(() -> {
-            // WebSocket notification
-            Map<String, Object> notification = new HashMap<>();
-            notification.put("type", "BRICK_COMMENT");
-            notification.put("commenterId", commenter.getId());
-            notification.put("commenterName", commenter.getUsername());
-            notification.put("brickId", brick.getId());
-            notification.put("brickTitle", brick.getTitle());
-            
-            // Send via WebSocket
-            messagingTemplate.convertAndSendToUser(
-                    owner.getId().toString(),
-                    "/queue/notifications",
-                    notification
-            );
-            
-            // Send via FCM if device token is available
-            sendFcmNotification(owner, 
-                    commenter.getUsername() + " commented on your brick", 
-                    brick.getTitle(),
-                    "BRICK_COMMENT"
-            );
-        });
-    }
+    // Brick notification methods have been removed
 }

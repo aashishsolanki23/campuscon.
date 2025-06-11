@@ -35,9 +35,7 @@ public class CachingConfig {
                 // Deeds - moderate TTL as they are frequently accessed
                 .withCacheConfiguration("deeds", 
                         defaultConfig.entryTtl(Duration.ofMinutes(30)))
-                // Bricks - moderate TTL as they are frequently accessed
-                .withCacheConfiguration("bricks", 
-                        defaultConfig.entryTtl(Duration.ofMinutes(30)))
+                // Brick cache configuration has been removed
                 // Society data - longer TTL as they change less frequently
                 .withCacheConfiguration("societies", 
                         defaultConfig.entryTtl(Duration.ofHours(2)))

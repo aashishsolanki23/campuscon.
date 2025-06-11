@@ -36,8 +36,8 @@ public class SavedItem {
     private LocalDateTime savedAt;
     
     public enum ItemType {
-        BRICK,
+        // BRICK removed
         DEED,
-        SOCIETY
+        USER // Changed from SOCIETY to reflect unified user model
     }
 }

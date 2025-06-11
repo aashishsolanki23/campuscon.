@@ -51,22 +51,16 @@ public class DeedRegistrationController {
     }
 
     @GetMapping("/deed/{deedId}")
-    @PreAuthorize("hasRole('SOCIETY')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<PagedResponse<DeedRegistrationResponse>>> getDeedRegistrations(
             @PathVariable Long deedId,
-            @RequestParam(required = false) DeedRegistration.RegistrationStatus status,
             @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_NUMBER) int page,
             @RequestParam(defaultValue = AppConstants.DEFAULT_PAGE_SIZE) int size,
             @CurrentUser UserPrincipal currentUser) {
         
         Pageable pageable = PageRequest.of(page, size, Sort.Direction.DESC, "registeredAt");
         
-        Page<DeedRegistration> registrationsPage;
-        if (status != null) {
-            registrationsPage = deedRegistrationService.getDeedRegistrationsByStatus(deedId, status, pageable);
-        } else {
-            registrationsPage = deedRegistrationService.getDeedRegistrations(deedId, pageable);
-        }
+        Page<DeedRegistration> registrationsPage = deedRegistrationService.getDeedRegistrations(deedId, pageable);
         
         List<DeedRegistrationResponse> registrations = registrationsPage.getContent().stream()
                 .map(this::convertToResponse)
@@ -112,20 +106,7 @@ public class DeedRegistrationController {
         return ResponseEntity.ok(ApiResponse.success(pagedResponse, "User registrations retrieved successfully"));
     }
 
-    @PutMapping("/{registrationId}/status")
-    @PreAuthorize("hasRole('SOCIETY')")
-    public ResponseEntity<ApiResponse<DeedRegistrationResponse>> updateRegistrationStatus(
-            @PathVariable Long registrationId,
-            @RequestParam DeedRegistration.RegistrationStatus status,
-            @RequestParam(required = false) String rejectionReason,
-            @CurrentUser UserPrincipal currentUser) {
-        
-        DeedRegistration registration = deedRegistrationService.updateRegistrationStatus(
-                registrationId, status, rejectionReason, currentUser.getId());
-        
-        return ResponseEntity.ok(ApiResponse.success(
-                convertToResponse(registration), "Registration status updated"));
-    }
+    // Registration status updates no longer needed with single-click registration
 
     @DeleteMapping("/{deedId}")
     @PreAuthorize("hasRole('USER')")
@@ -144,10 +125,10 @@ public class DeedRegistrationController {
             @PathVariable Long deedId,
             @CurrentUser UserPrincipal currentUser) {
         
-        DeedRegistration.RegistrationStatus status = deedRegistrationService.getRegistrationStatus(
+        boolean isRegistered = deedRegistrationService.isUserRegisteredForDeed(
                 deedId, currentUser.getId());
         
-        String statusStr = status != null ? status.name() : "NOT_REGISTERED";
+        String statusStr = isRegistered ? "REGISTERED" : "NOT_REGISTERED";
         
         return ResponseEntity.ok(ApiResponse.success(statusStr, "Registration status retrieved"));
     }
@@ -160,12 +141,12 @@ public class DeedRegistrationController {
             @PathVariable Long deedId) {
         
         long totalCount = deedRegistrationService.countRegistrations(deedId);
-        long pendingCount = deedRegistrationService.countRegistrationsByStatus(
-                deedId, DeedRegistration.RegistrationStatus.PENDING);
-        long approvedCount = deedRegistrationService.countRegistrationsByStatus(
-                deedId, DeedRegistration.RegistrationStatus.APPROVED);
-        long rejectedCount = deedRegistrationService.countRegistrationsByStatus(
-                deedId, DeedRegistration.RegistrationStatus.REJECTED);
+        
+        // With single-click registration, we no longer track statuses
+        // All registrations are automatically approved
+        long pendingCount = 0;
+        long approvedCount = totalCount;
+        long rejectedCount = 0;
         
         DeedRegistrationCountsResponse counts = new DeedRegistrationCountsResponse(
             totalCount, pendingCount, approvedCount, rejectedCount);
@@ -182,8 +163,6 @@ public class DeedRegistrationController {
                 .deedId(registration.getDeed().getId())
                 .userId(registration.getUser().getId())
                 .registeredAt(registration.getRegisteredAt())
-                .status(registration.getStatus())
-                .rejectionReason(registration.getRejectionReason())
                 .teamName(registration.getTeamName())
                 .teamSize(registration.getTeamSize())
                 .additionalInfo(registration.getAdditionalInfo())

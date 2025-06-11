@@ -106,7 +106,7 @@ public class Settings {
     }
 
     public enum BondRequestPermission {
-        EVERYONE, ONLY_COLLEGE_MEMBERS, NOBODY
+        EVERYONE, ONLY_INSTITUTION_MEMBERS, NOBODY
     }
 
     public enum CommentPermission {

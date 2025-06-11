@@ -1,0 +1,654 @@
+{
+  "api_endpoints": {
+    "auth": {
+      "base_path": "/api/auth",
+      "description": "Authentication and user registration endpoints",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/register",
+          "description": "Register a new user",
+          "requires_auth": false
+        },
+        {
+          "method": "POST",
+          "path": "/login",
+          "description": "Authenticate a user and get a JWT token",
+          "requires_auth": false
+        },
+        {
+          "method": "POST",
+          "path": "/verify-otp",
+          "description": "Verify the OTP for phone number validation",
+          "requires_auth": false
+        },
+        {
+          "method": "POST",
+          "path": "/resend-otp",
+          "description": "Resend the OTP for phone number validation",
+          "requires_auth": false
+        }
+      ]
+    },
+    "colleges": {
+      "base_path": "/api/v1/colleges",
+      "description": "College-related endpoints",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/",
+          "description": "Get college information (simplified endpoint)",
+          "requires_auth": false
+        }
+      ]
+    },
+    "deed_chat": {
+      "base_path": "/api/deeds/chat",
+      "description": "Deed chat groups and team management",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/groups/{deedId}",
+          "description": "Get all chat groups for a specific deed",
+          "requires_auth": true,
+          "path_params": ["deedId"]
+        },
+        {
+          "method": "POST",
+          "path": "/teams/{deedId}",
+          "description": "Create a new team for a deed",
+          "requires_auth": true,
+          "path_params": ["deedId"]
+        },
+        {
+          "method": "POST",
+          "path": "/teams/{teamId}/shortlist",
+          "description": "Shortlist a team for a deed",
+          "requires_auth": true,
+          "path_params": ["teamId"]
+        },
+        {
+          "method": "GET",
+          "path": "/export/{deedId}",
+          "description": "Export participants list as CSV",
+          "requires_auth": true,
+          "path_params": ["deedId"]
+        }
+      ]
+    },
+    "deeds": {
+      "base_path": "/api/deeds",
+      "description": "Core deed operations (events)",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/",
+          "description": "Get all deeds with optional filtering",
+          "requires_auth": true,
+          "query_params": ["category", "startDate", "endDate", "search", "page", "size"]
+        },
+        {
+          "method": "GET",
+          "path": "/creator/{creatorId}",
+          "description": "Get all deeds created by a specific user",
+          "requires_auth": true,
+          "path_params": ["creatorId"]
+        },
+        {
+          "method": "GET",
+          "path": "/{id}",
+          "description": "Get a deed by its ID",
+          "requires_auth": true,
+          "path_params": ["id"]
+        },
+        {
+          "method": "POST",
+          "path": "/",
+          "description": "Create a new deed",
+          "requires_auth": true,
+          "content_type": "multipart/form-data"
+        },
+        {
+          "method": "PUT",
+          "path": "/{id}",
+          "description": "Update an existing deed",
+          "requires_auth": true,
+          "path_params": ["id"]
+        },
+        {
+          "method": "DELETE",
+          "path": "/{id}",
+          "description": "Delete a deed",
+          "requires_auth": true,
+          "path_params": ["id"]
+        },
+        {
+          "method": "POST",
+          "path": "/{id}/comments",
+          "description": "Add a comment to a deed",
+          "requires_auth": true,
+          "path_params": ["id"]
+        },
+        {
+          "method": "GET",
+          "path": "/{id}/comments",
+          "description": "Get all comments for a deed",
+          "requires_auth": true,
+          "path_params": ["id"]
+        },
+        {
+          "method": "GET",
+          "path": "/comments/{commentId}/replies",
+          "description": "Get all replies for a specific comment",
+          "requires_auth": true,
+          "path_params": ["commentId"]
+        }
+      ]
+    },
+    "deed_forms": {
+      "base_path": "/api/v1/deeds",
+      "description": "Deed form-based operations with advanced features",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/",
+          "description": "Create a new deed using form",
+          "requires_auth": true,
+          "roles": ["USER"]
+        },
+        {
+          "method": "GET",
+          "path": "/{id}",
+          "description": "Get a deed by its ID",
+          "requires_auth": false,
+          "path_params": ["id"]
+        },
+        {
+          "method": "PUT",
+          "path": "/{id}",
+          "description": "Update an existing deed using form",
+          "requires_auth": true,
+          "path_params": ["id"],
+          "roles": ["USER"]
+        },
+        {
+          "method": "DELETE",
+          "path": "/{id}",
+          "description": "Delete a deed",
+          "requires_auth": true,
+          "path_params": ["id"],
+          "roles": ["USER"]
+        },
+        {
+          "method": "GET",
+          "path": "/",
+          "description": "Get all deeds with advanced filtering and pagination",
+          "requires_auth": false,
+          "query_params": ["category", "societyId", "startDate", "endDate", "isTeamEvent", "isOpenForAll", "searchTerm", "page", "size", "sort"]
+        },
+        {
+          "method": "PUT",
+          "path": "/{id}/approve",
+          "description": "Approve a deed (Admin only)",
+          "requires_auth": true,
+          "path_params": ["id"],
+          "roles": ["ADMIN"]
+        },
+        {
+          "method": "GET",
+          "path": "/categories",
+          "description": "Get all available deed categories",
+          "requires_auth": false
+        }
+      ]
+    },
+    "deed_registrations": {
+      "base_path": "/api/deed-registrations",
+      "description": "Deed registration and enrollment management",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/",
+          "description": "Register the current user for a deed",
+          "requires_auth": true,
+          "roles": ["USER"]
+        },
+        {
+          "method": "GET",
+          "path": "/deed/{deedId}",
+          "description": "Get all registrations for a specific deed",
+          "requires_auth": true,
+          "path_params": ["deedId"],
+          "roles": ["USER"]
+        },
+        {
+          "method": "GET",
+          "path": "/user/me",
+          "description": "Get all deeds the current user is registered for",
+          "requires_auth": true,
+          "roles": ["USER"]
+        },
+        {
+          "method": "DELETE",
+          "path": "/{deedId}",
+          "description": "Cancel the current user's registration for a deed",
+          "requires_auth": true,
+          "path_params": ["deedId"],
+          "roles": ["USER"]
+        },
+        {
+          "method": "GET",
+          "path": "/{deedId}/status",
+          "description": "Check if the current user is registered for a deed",
+          "requires_auth": true,
+          "path_params": ["deedId"],
+          "roles": ["USER"]
+        },
+        {
+          "method": "GET",
+          "path": "/{deedId}/counts",
+          "description": "Get registration counts for a deed",
+          "requires_auth": false,
+          "path_params": ["deedId"]
+        }
+      ]
+    },
+    "deed_settings": {
+      "base_path": "/api/deeds/{deedId}/settings",
+      "description": "Deed configuration and settings management",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/registration",
+          "description": "Get the registration settings for a deed",
+          "requires_auth": true,
+          "path_params": ["deedId"]
+        },
+        {
+          "method": "PUT",
+          "path": "/registration",
+          "description": "Update the registration settings for a deed",
+          "requires_auth": true,
+          "path_params": ["deedId"]
+        },
+        {
+          "method": "GET",
+          "path": "/",
+          "description": "Get the general settings for a deed",
+          "requires_auth": true,
+          "path_params": ["deedId"]
+        },
+        {
+          "method": "PUT",
+          "path": "/",
+          "description": "Update the general settings for a deed",
+          "requires_auth": true,
+          "path_params": ["deedId"]
+        },
+        {
+          "method": "POST",
+          "path": "/waitlist/process",
+          "description": "Process the waitlisted registrations for a deed",
+          "requires_auth": true,
+          "path_params": ["deedId"]
+        }
+      ]
+    },
+    "chat_rest": {
+      "base_path": "/api/chat",
+      "description": "Chat groups and messaging REST endpoints",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/groups/{groupId}/messages",
+          "description": "Get paginated messages for a specific chat group",
+          "requires_auth": true,
+          "path_params": ["groupId"],
+          "query_params": ["page", "size"]
+        },
+        {
+          "method": "GET",
+          "path": "/groups",
+          "description": "Get all chat groups the current user is a member of",
+          "requires_auth": true
+        },
+        {
+          "method": "GET",
+          "path": "/groups/{groupId}",
+          "description": "Get the details for a specific chat group",
+          "requires_auth": true,
+          "path_params": ["groupId"]
+        }
+      ]
+    },
+    "messaging": {
+      "base_path": "/api/messaging",
+      "description": "Advanced messaging, groups, and social bonds",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/groups",
+          "description": "Get all groups the current user belongs to",
+          "requires_auth": true
+        },
+        {
+          "method": "POST",
+          "path": "/groups",
+          "description": "Create a new custom group",
+          "requires_auth": true
+        },
+        {
+          "method": "GET",
+          "path": "/groups/{groupId}/messages",
+          "description": "Get messages for a specific group",
+          "requires_auth": true,
+          "path_params": ["groupId"],
+          "query_params": ["page", "size"]
+        },
+        {
+          "method": "POST",
+          "path": "/groups/{groupId}/members/{userId}",
+          "description": "Add a user to a group",
+          "requires_auth": true,
+          "path_params": ["groupId", "userId"]
+        },
+        {
+          "method": "DELETE",
+          "path": "/groups/{groupId}/members/{userId}",
+          "description": "Remove a user from a group",
+          "requires_auth": true,
+          "path_params": ["groupId", "userId"]
+        },
+        {
+          "method": "GET",
+          "path": "/direct/{userId}",
+          "description": "Get direct messages with another user",
+          "requires_auth": true,
+          "path_params": ["userId"],
+          "query_params": ["page", "size"]
+        },
+        {
+          "method": "GET",
+          "path": "/bonds",
+          "description": "Get all bonded users (contacts)",
+          "requires_auth": true
+        },
+        {
+          "method": "POST",
+          "path": "/bonds/{userId}",
+          "description": "Send a bond (friend) request",
+          "requires_auth": true,
+          "path_params": ["userId"]
+        },
+        {
+          "method": "PUT",
+          "path": "/bonds/{bondId}/accept",
+          "description": "Accept a bond request",
+          "requires_auth": true,
+          "path_params": ["bondId"]
+        },
+        {
+          "method": "PUT",
+          "path": "/bonds/{bondId}/reject",
+          "description": "Reject a bond request",
+          "requires_auth": true,
+          "path_params": ["bondId"]
+        },
+        {
+          "method": "GET",
+          "path": "/bonds/pending",
+          "description": "Get all pending bond requests",
+          "requires_auth": true
+        },
+        {
+          "method": "DELETE",
+          "path": "/messages/{messageId}",
+          "description": "Delete a message",
+          "requires_auth": true,
+          "path_params": ["messageId"]
+        }
+      ]
+    },
+    "saved_items": {
+      "base_path": "/api/saved",
+      "description": "User favorites and saved content management",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/",
+          "description": "Get all saved items for the current user",
+          "requires_auth": true,
+          "query_params": ["page", "size"]
+        },
+        {
+          "method": "GET",
+          "path": "/type/{itemType}",
+          "description": "Get saved items of a specific type (DEED, USER)",
+          "requires_auth": true,
+          "path_params": ["itemType"],
+          "query_params": ["page", "size"]
+        },
+        {
+          "method": "GET",
+          "path": "/deeds",
+          "description": "Get all saved deeds",
+          "requires_auth": true,
+          "query_params": ["page", "size"]
+        },
+        {
+          "method": "GET",
+          "path": "/users",
+          "description": "Get all saved users",
+          "requires_auth": true,
+          "query_params": ["page", "size"]
+        },
+        {
+          "method": "POST",
+          "path": "/users/{targetUserId}",
+          "description": "Save a user to favorites",
+          "requires_auth": true,
+          "path_params": ["targetUserId"]
+        },
+        {
+          "method": "DELETE",
+          "path": "/users/{targetUserId}",
+          "description": "Unsave a user from favorites",
+          "requires_auth": true,
+          "path_params": ["targetUserId"]
+        },
+        {
+          "method": "GET",
+          "path": "/users/{targetUserId}/check",
+          "description": "Check if a user is saved",
+          "requires_auth": true,
+          "path_params": ["targetUserId"]
+        },
+        {
+          "method": "DELETE",
+          "path": "/{savedItemId}",
+          "description": "Delete a saved item entry",
+          "requires_auth": true,
+          "path_params": ["savedItemId"]
+        }
+      ]
+    },
+    "settings": {
+      "base_path": "/api/settings",
+      "description": "User preferences and application settings",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/profile",
+          "description": "Get the profile settings for the current user",
+          "requires_auth": true,
+          "roles": ["USER"]
+        },
+        {
+          "method": "PUT",
+          "path": "/profile",
+          "description": "Update the profile settings for the current user",
+          "requires_auth": true,
+          "roles": ["USER"]
+        },
+        {
+          "method": "GET",
+          "path": "/notifications",
+          "description": "Get notification settings",
+          "requires_auth": true,
+          "roles": ["USER"]
+        },
+        {
+          "method": "PUT",
+          "path": "/notifications",
+          "description": "Update notification settings",
+          "requires_auth": true,
+          "roles": ["USER"]
+        },
+        {
+          "method": "GET",
+          "path": "/preferences",
+          "description": "Get app preferences",
+          "requires_auth": true,
+          "roles": ["USER"]
+        },
+        {
+          "method": "PUT",
+          "path": "/preferences",
+          "description": "Update app preferences",
+          "requires_auth": true,
+          "roles": ["USER"]
+        }
+      ]
+    },
+    "security_settings": {
+      "base_path": "/api/settings/security",
+      "description": "Security and privacy settings",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/",
+          "description": "Get security settings for the current user",
+          "requires_auth": true,
+          "roles": ["USER"]
+        },
+        {
+          "method": "PUT",
+          "path": "/",
+          "description": "Update security settings",
+          "requires_auth": true,
+          "roles": ["USER"]
+        },
+        {
+          "method": "GET",
+          "path": "/blocked-users",
+          "description": "Get a list of blocked users",
+          "requires_auth": true,
+          "roles": ["USER"]
+        },
+        {
+          "method": "POST",
+          "path": "/block-user/{userId}",
+          "description": "Block a user",
+          "requires_auth": true,
+          "path_params": ["userId"],
+          "roles": ["USER"]
+        },
+        {
+          "method": "DELETE",
+          "path": "/unblock-user/{userId}",
+          "description": "Unblock a user",
+          "requires_auth": true,
+          "path_params": ["userId"],
+          "roles": ["USER"]
+        },
+        {
+          "method": "GET",
+          "path": "/is-blocked/{userId}",
+          "description": "Check if a user is blocked",
+          "requires_auth": true,
+          "path_params": ["userId"],
+          "roles": ["USER"]
+        },
+        {
+          "method": "DELETE",
+          "path": "/account",
+          "description": "Delete the current user's account",
+          "requires_auth": true,
+          "roles": ["USER"]
+        }
+      ]
+    },
+    "user_account": {
+      "base_path": "/api/v1/account",
+      "description": "User account management",
+      "endpoints": [
+        {
+          "method": "PUT",
+          "path": "/username",
+          "description": "Change the current user's username",
+          "requires_auth": true
+        },
+        {
+          "method": "PUT",
+          "path": "/organization-info",
+          "description": "Update the user's organization role or display name",
+          "requires_auth": true
+        },
+        {
+          "method": "DELETE",
+          "path": "/",
+          "description": "Delete the current user's account",
+          "requires_auth": true
+        }
+      ]
+    },
+    "websocket_mappings": {
+      "description": "WebSocket endpoints for real-time communication",
+      "note": "These are not REST endpoints but WebSocket message mappings",
+      "endpoints": [
+        {
+          "type": "MessageMapping",
+          "path": "/group/{groupId}/send",
+          "description": "Send a message to a group chat",
+          "destination": "/topic/group/{groupId}",
+          "path_params": ["groupId"]
+        },
+        {
+          "type": "MessageMapping",
+          "path": "/chat/{receiverId}",
+          "description": "Send a direct message to a user",
+          "destination": "/queue/messages",
+          "path_params": ["receiverId"]
+        },
+        {
+          "type": "MessageMapping",
+          "path": "/groups/{groupId}",
+          "description": "Send a message to a group (alternate mapping)",
+          "destination": "/topic/groups/{groupId}",
+          "path_params": ["groupId"]
+        },
+        {
+          "type": "MessageMapping",
+          "path": "/messages/{messageId}/read",
+          "description": "Mark a message as read",
+          "path_params": ["messageId"]
+        },
+        {
+          "type": "MessageMapping",
+          "path": "/messages/{messageId}/react",
+          "description": "Add a reaction to a message",
+          "path_params": ["messageId"]
+        }
+      ]
+    }
+  },
+  "metadata": {
+    "generated_at": "2025-06-11T17:20:31+05:30",
+    "total_rest_endpoints": 89,
+    "total_websocket_mappings": 5,
+    "authentication_required": "Most endpoints require JWT authentication via Authorization header",
+    "base_url": "Depends on deployment (typically http://localhost:8080 for development)",
+    "response_format": "All REST endpoints return ApiResponse<T> wrapper with success/error status",
+    "pagination": "Many list endpoints support pagination via page and size query parameters"
+  }
+}

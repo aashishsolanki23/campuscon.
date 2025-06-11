@@ -96,6 +96,12 @@
       <excludeFolder url="file://$MODULE_DIR$/frontend/windows/flutter/ephemeral/.plugin_symlinks/url_launcher_windows/example/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/frontend/windows/flutter/ephemeral/.plugin_symlinks/url_launcher_windows/example/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/frontend/windows/flutter/ephemeral/.plugin_symlinks/url_launcher_windows/example/build" />
+      <excludeFolder url="file://$MODULE_DIR$/frontend/linux/flutter/ephemeral/.plugin_symlinks/flutter_secure_storage_linux/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/frontend/linux/flutter/ephemeral/.plugin_symlinks/flutter_secure_storage_linux/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/frontend/linux/flutter/ephemeral/.plugin_symlinks/flutter_secure_storage_linux/build" />
+      <excludeFolder url="file://$MODULE_DIR$/frontend/windows/flutter/ephemeral/.plugin_symlinks/flutter_secure_storage_windows/.dart_tool" />
+      <excludeFolder url="file://$MODULE_DIR$/frontend/windows/flutter/ephemeral/.plugin_symlinks/flutter_secure_storage_windows/.pub" />
+      <excludeFolder url="file://$MODULE_DIR$/frontend/windows/flutter/ephemeral/.plugin_symlinks/flutter_secure_storage_windows/build" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

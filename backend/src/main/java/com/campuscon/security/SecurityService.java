@@ -1,151 +1,111 @@
 package com.campuscon.security;
 
-import com.campuscon.model.SocietyRole;
-import com.campuscon.repository.SocietyRoleRepository;
-import com.campuscon.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
+import java.util.Arrays;
 
 /**
- * Service for authorization and security checks
+ * Service for authorization and security checks using the unified user model
  */
 @Service
 @RequiredArgsConstructor
 public class SecurityService {
 
-    private final SocietyRoleRepository societyRoleRepository;
-    private final UserRepository userRepository;
+    // No repository dependencies needed
 
     /**
-     * Check if user is a member of the society
+     * Check if a user is the owner of or has specific relationship with an entity
      */
-    public boolean isSocietyMember(Long societyId, Authentication authentication) {
+    public boolean isOwnerOfResource(Long resourceOwnerId, Authentication authentication) {
         if (!(authentication.getPrincipal() instanceof UserPrincipal)) {
             return false;
         }
 
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
         
-        // Society owner can access its own settings
-        if (societyId.equals(userPrincipal.getId())) {
-            return true;
-        }
-        
-        // Check if user has a role in the society
-        return societyRoleRepository.findBySocietyAndUser(
-                userRepository.findById(societyId).orElseThrow(),
-                userRepository.findById(userPrincipal.getId()).orElseThrow()
-        ).isPresent();
+        // Resource owner can access its own resources
+        return resourceOwnerId.equals(userPrincipal.getId());
     }
-
+    
     /**
-     * Check if user can modify society settings
+     * Check if user has specific roles or userTypes
      */
-    public boolean canModifySocietySettings(Long societyId, Authentication authentication) {
+    public boolean hasUserTypes(Authentication authentication, String... requiredTypes) {
         if (!(authentication.getPrincipal() instanceof UserPrincipal)) {
             return false;
         }
 
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
         
-        // Society owner can modify its own settings
-        if (societyId.equals(userPrincipal.getId())) {
-            return true;
+        if (userPrincipal.getUserTypes() == null || userPrincipal.getUserTypes().isEmpty()) {
+            return false;
         }
         
-        // Check if user has permission to modify settings
-        return societyRoleRepository.findBySocietyAndUser(
-                userRepository.findById(societyId).orElseThrow(),
-                userRepository.findById(userPrincipal.getId()).orElseThrow()
-        ).map(SocietyRole::isCanModifySettings).orElse(false);
+        // Check if user has any of the required types
+        return Arrays.stream(requiredTypes)
+                .anyMatch(type -> userPrincipal.getUserTypes().contains(type));
     }
-
+    
     /**
-     * Check if user is the society president
+     * Check if user has permission to act on a resource based on their userTypes and relationship
      */
-    public boolean isSocietyPresident(Long societyId, Authentication authentication) {
+    public boolean hasPermission(Long resourceOwnerId, Authentication authentication, String... permissionRoles) {
         if (!(authentication.getPrincipal() instanceof UserPrincipal)) {
             return false;
         }
 
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
         
-        // Society owner is considered the president
-        if (societyId.equals(userPrincipal.getId())) {
+        // Resource owner always has permission
+        if (resourceOwnerId.equals(userPrincipal.getId())) {
             return true;
         }
         
-        // Check if user is the president
-        return societyRoleRepository.findBySocietyAndUser(
-                userRepository.findById(societyId).orElseThrow(),
-                userRepository.findById(userPrincipal.getId()).orElseThrow()
-        ).map(SocietyRole::isPresident).orElse(false);
+        // Check if user has any of the required permission roles
+        return hasUserTypes(authentication, permissionRoles);
     }
-
+    
     /**
-     * Check if user can manage society members
+     * Check if user can edit content created by another user
      */
-    public boolean canManageSocietyMembers(Long societyId, Authentication authentication) {
+    public boolean canManageContent(Long contentCreatorId, Authentication authentication) {
         if (!(authentication.getPrincipal() instanceof UserPrincipal)) {
             return false;
         }
 
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
         
-        // Society owner can manage members
-        if (societyId.equals(userPrincipal.getId())) {
+        // Creator can manage their own content
+        if (contentCreatorId.equals(userPrincipal.getId())) {
             return true;
         }
         
-        // Check if user has permission to manage members
-        return societyRoleRepository.findBySocietyAndUser(
-                userRepository.findById(societyId).orElseThrow(),
-                userRepository.findById(userPrincipal.getId()).orElseThrow()
-        ).map(SocietyRole::isCanManageMembers).orElse(false);
+        // Admins can manage all content
+        return userPrincipal.getUserTypes() != null &&
+               userPrincipal.getUserTypes().contains("ADMIN");
     }
-
+    
     /**
-     * Check if user can post content for society
+     * Check if user has organizational management permissions
      */
-    public boolean canPostForSociety(Long societyId, Authentication authentication) {
+    public boolean canManageOrganization(Long organizationId, Authentication authentication) {
         if (!(authentication.getPrincipal() instanceof UserPrincipal)) {
             return false;
         }
 
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
         
-        // Society owner can post content
-        if (societyId.equals(userPrincipal.getId())) {
+        // Organization owner can manage the organization
+        if (organizationId.equals(userPrincipal.getId())) {
             return true;
         }
         
-        // Check if user has permission to post
-        return societyRoleRepository.findBySocietyAndUser(
-                userRepository.findById(societyId).orElseThrow(),
-                userRepository.findById(userPrincipal.getId()).orElseThrow()
-        ).map(SocietyRole::isCanPost).orElse(false);
-    }
-
-    /**
-     * Check if user can approve posts for society
-     */
-    public boolean canApprovePostsForSociety(Long societyId, Authentication authentication) {
-        if (!(authentication.getPrincipal() instanceof UserPrincipal)) {
-            return false;
-        }
-
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-        
-        // Society owner can approve posts
-        if (societyId.equals(userPrincipal.getId())) {
-            return true;
-        }
-        
-        // Check if user has permission to approve posts
-        return societyRoleRepository.findBySocietyAndUser(
-                userRepository.findById(societyId).orElseThrow(),
-                userRepository.findById(userPrincipal.getId()).orElseThrow()
-        ).map(SocietyRole::isCanApprovePosts).orElse(false);
+        // Check for specific management roles
+        return userPrincipal.getUserTypes() != null &&
+               (userPrincipal.getUserTypes().contains("ADMIN") ||
+                userPrincipal.getUserTypes().contains("ORG_MANAGER") ||
+                ("PRESIDENT".equals(userPrincipal.getOrganizationRole()) && 
+                 userPrincipal.getUserTypes().contains("ORG_MEMBER")));
     }
 }

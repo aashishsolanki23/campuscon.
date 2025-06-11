@@ -1,16 +1,13 @@
 package com.campuscon.service;
 
 import com.campuscon.exception.UnauthorizedException;
-import com.campuscon.model.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 /**
  * Service responsible for authorization checks related to content creation and manipulation
- * Enforces CampusCon's role-based content creation rules:
- * - Students can only create bricks
- * - Societies can create both bricks and deeds
+ * Enforces CampusCon's permission rules for creating and managing deeds
  */
 @Service
 @RequiredArgsConstructor
@@ -19,51 +16,24 @@ public class AuthorizationService {
 
     private final UserService userService;
     
-    /**
-     * Checks if a user is authorized to create a brick
-     * Both students and societies can create bricks
-     * 
-     * @param userId The ID of the user attempting to create a brick
-     * @throws UnauthorizedException if the user is not authorized
-     */
-    public void checkBrickCreationPermission(Long userId) {
-        // Both students and societies can create bricks, so no additional checks needed
-        // Just verify the user exists
-        userService.getUserById(userId);
-    }
+    // Brick creation permission check has been removed
     
     /**
      * Checks if a user is authorized to create a deed
-     * Only societies can create deeds
+     * Any authenticated user can create deeds
      * 
      * @param userId The ID of the user attempting to create a deed
      * @throws UnauthorizedException if the user is not authorized
      */
     public void checkDeedCreationPermission(Long userId) {
-        User user = userService.getUserById(userId);
+        // Verify the user exists - will throw exception if not found
+        userService.getUserById(userId);
         
-        if (user.getRole() != User.UserRole.SOCIETY) {
-            log.warn("User {} attempted to create a deed but is not a society", userId);
-            throw new UnauthorizedException("Only societies can create deeds");
-        }
+        // All authenticated users can create deeds now
+        // No additional authorization check needed
     }
     
-    /**
-     * Checks if the user has permission to modify the specified brick
-     * 
-     * @param userId The ID of the user attempting to modify the brick
-     * @param creatorId The ID of the brick creator
-     * @throws UnauthorizedException if the user is not authorized
-     */
-    public void checkBrickModificationPermission(Long userId, Long creatorId) {
-        User user = userService.getUserById(userId);
-        
-        // Allow if the user is the creator or an admin
-        if (!userId.equals(creatorId) && user.getRole() != User.UserRole.ADMIN) {
-            log.warn("User {} attempted to modify brick created by {}", userId, creatorId);
-            throw new UnauthorizedException("You don't have permission to modify this brick");
-        }
-    }
+    // Brick modification permission check has been removed
     
     /**
      * Checks if the user has permission to modify the specified deed
@@ -73,10 +43,11 @@ public class AuthorizationService {
      * @throws UnauthorizedException if the user is not authorized
      */
     public void checkDeedModificationPermission(Long userId, Long creatorId) {
-        User user = userService.getUserById(userId);
+        // Verify the user exists
+        userService.getUserById(userId);
         
-        // Allow if the user is the creator society or an admin
-        if (!userId.equals(creatorId) && user.getRole() != User.UserRole.ADMIN) {
+        // Allow if the user is the creator
+        if (!userId.equals(creatorId)) {
             log.warn("User {} attempted to modify deed created by {}", userId, creatorId);
             throw new UnauthorizedException("You don't have permission to modify this deed");
         }
@@ -91,12 +62,13 @@ public class AuthorizationService {
      * @throws UnauthorizedException if the user is not authorized
      */
     public void checkDeedRegistrationEnablePermission(Long userId, Long creatorId) {
-        User user = userService.getUserById(userId);
+        // Verify the user exists
+        userService.getUserById(userId);
         
-        // Only the creator society or an admin can enable registration
-        if (!userId.equals(creatorId) && user.getRole() != User.UserRole.ADMIN) {
+        // Only the creator can enable registration
+        if (!userId.equals(creatorId)) {
             log.warn("User {} attempted to modify registration settings for deed created by {}", userId, creatorId);
-            throw new UnauthorizedException("Only the society that created this deed can enable registration");
+            throw new UnauthorizedException("Only the user that created this deed can enable registration");
         }
     }
     
@@ -109,12 +81,13 @@ public class AuthorizationService {
      * @throws UnauthorizedException if the user is not authorized
      */
     public void checkDeedRegistrationViewPermission(Long userId, Long creatorId) {
-        User user = userService.getUserById(userId);
+        // Verify the user exists
+        userService.getUserById(userId);
         
-        // Only the creator society or an admin can view registrations
-        if (!userId.equals(creatorId) && user.getRole() != User.UserRole.ADMIN) {
+        // Only the creator can view registrations
+        if (!userId.equals(creatorId)) {
             log.warn("User {} attempted to view registrations for deed created by {}", userId, creatorId);
-            throw new UnauthorizedException("Only the society that created this deed can view registrations");
+            throw new UnauthorizedException("Only the user that created this deed can view registrations");
         }
     }
 }

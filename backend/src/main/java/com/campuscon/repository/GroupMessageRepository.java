@@ -16,6 +16,8 @@ public interface GroupMessageRepository extends JpaRepository<GroupMessage, Long
     
     Page<GroupMessage> findByGroupOrderBySentAtDesc(ChatGroup group, Pageable pageable);
     
+    Page<GroupMessage> findByGroupAndIsDeletedFalse(ChatGroup group, Pageable pageable);
+    
     List<GroupMessage> findByGroupAndIsPinnedTrue(ChatGroup group);
     
     @Query("SELECT m FROM GroupMessage m WHERE m.group = ?1 AND m.isDeleted = false ORDER BY m.sentAt DESC")

@@ -2,28 +2,34 @@ package com.campuscon.service;
 
 import com.campuscon.dto.deed.settings.DeedSettingsRequest;
 import com.campuscon.dto.deed.settings.DeedSettingsResponse;
+import com.campuscon.dto.deed.registration.DeedRegistrationSettings;
 import com.campuscon.exception.ResourceNotFoundException;
 import com.campuscon.model.Deed;
-import com.campuscon.model.DeedRegistration;
-import com.campuscon.model.User;
 import com.campuscon.repository.DeedRegistrationRepository;
 import com.campuscon.repository.DeedRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 /**
  * Service for managing deed settings
  */
 @Service
-@RequiredArgsConstructor
 public class DeedSettingsService {
 
     private final DeedRepository deedRepository;
     private final DeedRegistrationRepository deedRegistrationRepository;
+    // Kept for backward compatibility but no longer used with single-click registration
+    @SuppressWarnings("unused")
     private final NotificationService notificationService;
+    
+    public DeedSettingsService(
+            DeedRepository deedRepository,
+            DeedRegistrationRepository deedRegistrationRepository,
+            @org.springframework.context.annotation.Lazy NotificationService notificationService) {
+        this.deedRepository = deedRepository;
+        this.deedRegistrationRepository = deedRegistrationRepository;
+        this.notificationService = notificationService;
+    }
 
     /**
      * Get settings for a deed
@@ -32,17 +38,17 @@ public class DeedSettingsService {
         Deed deed = deedRepository.findById(deedId)
                 .orElseThrow(() -> new ResourceNotFoundException("Deed not found"));
         
-        // Count registrations using repository methods for better performance
-        int approvedCount = (int) deedRegistrationRepository.countByDeedAndStatus(deed, DeedRegistration.RegistrationStatus.APPROVED);
-        int waitlistCount = (int) deedRegistrationRepository.countByDeedAndStatus(deed, DeedRegistration.RegistrationStatus.PENDING);
+        // Count all registrations with single-click registration system
+        int totalCount = (int) deedRegistrationRepository.countByDeed(deed);
+        // With single-click registration, there's no waitlist or approval process
         
         return DeedSettingsResponse.builder()
-                .requireApprovalForRegistration(deed.isRequireRegistrationApproval())
+                .requireApprovalForRegistration(false) // Always false with single-click registration
                 .maxRegistrations(deed.getMaxRegistrations())
-                .allowWaitlist(deed.isAllowWaitlist())
+                .allowWaitlist(false) // Always false with single-click registration
                 .notifyOnRegistration(deed.isNotifyOnRegistration())
-                .currentRegistrationsCount(approvedCount)
-                .waitlistCount(waitlistCount)
+                .currentRegistrationsCount(totalCount)
+                .waitlistCount(0) // Always 0 with single-click registration
                 .build();
     }
 
@@ -56,16 +62,18 @@ public class DeedSettingsService {
         
         // Update deed settings
         if (request.getRequireApprovalForRegistration() != null) {
-            deed.setRequireRegistrationApproval(request.getRequireApprovalForRegistration());
+            deed.setRequireApproval(request.getRequireApprovalForRegistration());
         }
         
         if (request.getMaxRegistrations() != null) {
             deed.setMaxRegistrations(request.getMaxRegistrations());
         }
         
-        if (request.getAllowWaitlist() != null) {
-            deed.setAllowWaitlist(request.getAllowWaitlist());
-        }
+        // Waitlist is no longer supported with single-click registration
+        // Keep this line for backward compatibility
+        // if (request.getAllowWaitlist() != null) {
+            // deed.setAllowWaitlist(request.getAllowWaitlist());
+        // }
         
         if (request.getNotifyOnRegistration() != null) {
             deed.setNotifyOnRegistration(request.getNotifyOnRegistration());
@@ -88,57 +96,51 @@ public class DeedSettingsService {
             return false;
         }
         
-        // Count approved registrations
-        long approvedRegistrationsCount = deedRegistrationRepository.countByDeedAndStatus(deed, DeedRegistration.RegistrationStatus.APPROVED);
+        // Count all registrations with single-click registration
+        long totalRegistrations = deedRegistrationRepository.countByDeed(deed);
         
-        return approvedRegistrationsCount >= deed.getMaxRegistrations();
+        return totalRegistrations >= deed.getMaxRegistrations();
     }
 
     /**
-     * Process registrations from waitlist
-     * This can be called after someone cancels their registration
-     * @return Number of registrations that were approved from the waitlist
+     * Process registrations from waitlist - no longer needed with single-click registration
+     * This method is kept as a stub for backward compatibility
+     * @return Always returns 0 since there's no waitlist in single-click registration
      */
     @Transactional
     public int processWaitlist(Long deedId) {
+        // With single-click registration, there's no waitlist to process
+        // All registrations are automatically approved upon creation
+        return 0;
+    }
+    
+    /**
+     * Update registration settings for a deed
+     * @param deedId ID of the deed to update
+     * @param settings Registration settings to apply
+     */
+    @Transactional
+    public void updateRegistrationSettings(Long deedId, DeedRegistrationSettings settings) {
         Deed deed = deedRepository.findById(deedId)
                 .orElseThrow(() -> new ResourceNotFoundException("Deed not found"));
         
-        // If max registrations is not set or auto-approval is not enabled, do nothing
-        if (deed.getMaxRegistrations() == null || deed.getMaxRegistrations() <= 0 || deed.isRequireRegistrationApproval()) {
-            return 0;
+        // Update registration settings
+        if (settings.getRegistrationEnabled() != null) {
+            deed.setRegistrationEnabled(settings.getRegistrationEnabled());
         }
         
-        // Count approved registrations
-        long approvedRegistrationsCount = deedRegistrationRepository.countByDeedAndStatus(deed, DeedRegistration.RegistrationStatus.APPROVED);
-        
-        // If there's space for more registrations
-        int processed = 0;
-        if (approvedRegistrationsCount < deed.getMaxRegistrations()) {
-            // Get the oldest pending registrations
-            List<DeedRegistration> pendingRegistrations = deedRegistrationRepository.findByDeedAndStatusOrderByRegisteredAtAsc(deed, DeedRegistration.RegistrationStatus.PENDING);
-            
-            // Calculate how many can be approved
-            int slotsAvailable = deed.getMaxRegistrations() - (int) approvedRegistrationsCount;
-            int toApprove = Math.min(slotsAvailable, pendingRegistrations.size());
-            processed = toApprove;
-            
-            // Approve the oldest pending registrations
-            for (int i = 0; i < toApprove; i++) {
-                DeedRegistration registration = pendingRegistrations.get(i);
-                registration.setStatus(DeedRegistration.RegistrationStatus.APPROVED);
-                deedRegistrationRepository.save(registration);
-                
-                // Notify user about registration approval
-                User user = registration.getUser();
-                notificationService.sendDeedRegistrationApprovalNotification(
-                    user.getId(),
-                    deed.getId(),
-                    deed.getTitle(),
-                    "Your registration for " + deed.getTitle() + " has been approved!"
-                );
-            }
+        if (settings.getEligibilityCriteria() != null) {
+            deed.setEligibilityCriteria(settings.getEligibilityCriteria());
         }
-        return processed;
+        
+        if (settings.getMaxRegistrations() != null) {
+            deed.setMaxRegistrations(settings.getMaxRegistrations());
+        }
+        
+        if (settings.getRequireApproval() != null) {
+            deed.setRequireApproval(settings.getRequireApproval());
+        }
+        
+        deedRepository.save(deed);
     }
 }

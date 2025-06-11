@@ -16,6 +16,9 @@ public class MessageResponse {
     private Long replyToId;
     private String replyToContent;
     private Set<String> reactions;
+    private String imageUrl;
+    private String url;
+    private String urlMetadata;
     
     @Data
     public static class UserDTO {

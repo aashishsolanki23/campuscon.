@@ -6,9 +6,9 @@ import com.campuscon.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import org.springframework.stereotype.Repository;
 
 @Repository
 public interface DeedRegistrationRepository extends JpaRepository<DeedRegistration, Long> {
@@ -23,20 +23,15 @@ public interface DeedRegistrationRepository extends JpaRepository<DeedRegistrati
      */
     Page<DeedRegistration> findByUser(User user, Pageable pageable);
     
-    /**
-     * Find all registrations by status
-     */
-    Page<DeedRegistration> findByStatus(DeedRegistration.RegistrationStatus status, Pageable pageable);
+    // Status-related methods removed for single-click registration
+    
+    
+    // Status filtering methods removed for single-click registration
     
     /**
-     * Find all registrations for a deed with a specific status
+     * Find registrations for a deed ordered by creation date
      */
-    Page<DeedRegistration> findByDeedAndStatus(Deed deed, DeedRegistration.RegistrationStatus status, Pageable pageable);
-    
-    /**
-     * Find pending registrations for a deed ordered by creation date
-     */
-    List<DeedRegistration> findByDeedAndStatusOrderByRegisteredAtAsc(Deed deed, DeedRegistration.RegistrationStatus status);
+    List<DeedRegistration> findByDeedOrderByRegisteredAtAsc(Deed deed);
     
     /**
      * Check if a user has registered for a deed
@@ -54,7 +49,14 @@ public interface DeedRegistrationRepository extends JpaRepository<DeedRegistrati
     long countByDeed(Deed deed);
     
     /**
-     * Count registrations for a deed by status
+     * Count registrations for a user
      */
-    long countByDeedAndStatus(Deed deed, DeedRegistration.RegistrationStatus status);
+    long countByUser(User user);
+    
+    /**
+     * Find all registrations by a user (not paginated)
+     */
+    List<DeedRegistration> findAllByUser(User user);
+    
+    // Status-specific counting method removed for single-click registration
 }

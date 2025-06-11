@@ -11,7 +11,6 @@ import com.campuscon.service.DeedService;
 import com.campuscon.service.DeedSettingsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
@@ -26,20 +25,19 @@ public class DeedSettingsController {
 
     private final DeedService deedService;
     private final DeedSettingsService deedSettingsService;
-
+    
     /**
-     * Get registration settings for a deed
+     * Get deed registration settings
      */
     @GetMapping("/{deedId}/settings/registration")
-    @PreAuthorize("hasRole('SOCIETY')")
-    public ResponseEntity<ApiResponse<DeedRegistrationSettings>> getRegistrationSettings(
+    public ResponseEntity<?> getDeedRegistrationSettings(
             @PathVariable Long deedId,
-            @CurrentUser UserPrincipal currentUser) {
-        
+            @CurrentUser UserPrincipal userPrincipal
+    ) {
         Deed deed = deedService.getDeedById(deedId);
         
-        // Check if the current user is the society that created the deed
-        if (!deed.getSociety().getId().equals(currentUser.getId())) {
+        // Check if the current user is the creator of the deed
+        if (!deed.getCreator().getId().equals(userPrincipal.getId())) {
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("You don't have permission to access these settings")
             );
@@ -49,128 +47,105 @@ public class DeedSettingsController {
                 .registrationEnabled(deed.isRegistrationEnabled())
                 .eligibilityCriteria(deed.getEligibilityCriteria())
                 .maxRegistrations(deed.getMaxRegistrations())
-                .requireApproval(deed.isRequireRegistrationApproval())
-                .allowTeamRegistration(deed.isAllowTeamRegistration())
-                .maxTeamSize(deed.getMaxTeamSize())
-                .additionalFieldsConfig(deed.getAdditionalFieldsConfig())
+                .requireApproval(deed.isRequireApproval())
                 .build();
         
-        return ResponseEntity.ok(
-            ApiResponse.success(settings, "Registration settings retrieved successfully")
-        );
+        return ResponseEntity.ok(ApiResponse.success(settings));
     }
-
+    
     /**
-     * Update registration settings for a deed
+     * Update deed registration settings
      */
     @PutMapping("/{deedId}/settings/registration")
-    @PreAuthorize("hasRole('SOCIETY')")
-    public ResponseEntity<ApiResponse<DeedRegistrationSettings>> updateRegistrationSettings(
+    public ResponseEntity<?> updateDeedRegistrationSettings(
             @PathVariable Long deedId,
-            @Valid @RequestBody DeedRegistrationSettings settingsRequest,
-            @CurrentUser UserPrincipal currentUser) {
-        
+            @Valid @RequestBody DeedRegistrationSettings settings,
+            @CurrentUser UserPrincipal userPrincipal
+    ) {
         Deed deed = deedService.getDeedById(deedId);
         
-        // Check if the current user is the society that created the deed
-        if (!deed.getSociety().getId().equals(currentUser.getId())) {
+        // Check if the current user is the creator of the deed
+        if (!deed.getCreator().getId().equals(userPrincipal.getId())) {
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("You don't have permission to update these settings")
             );
         }
         
-        // Update deed with new settings
-        deed.setRegistrationEnabled(settingsRequest.getRegistrationEnabled());
-        deed.setEligibilityCriteria(settingsRequest.getEligibilityCriteria());
-        deed.setMaxRegistrations(settingsRequest.getMaxRegistrations());
-        deed.setRequireRegistrationApproval(settingsRequest.getRequireApproval());
-        deed.setAllowTeamRegistration(settingsRequest.getAllowTeamRegistration());
-        deed.setMaxTeamSize(settingsRequest.getMaxTeamSize());
-        deed.setAdditionalFieldsConfig(settingsRequest.getAdditionalFieldsConfig());
-        
-        // Save updated deed
-        deedService.updateDeed(deed);
+        deedSettingsService.updateRegistrationSettings(deedId, settings);
         
         return ResponseEntity.ok(
-            ApiResponse.success(settingsRequest, "Registration settings updated successfully")
+            ApiResponse.success(settings, "Registration settings updated successfully")
         );
     }
     
     /**
-     * Get deed settings
+     * Get deed general settings
      */
     @GetMapping("/{deedId}/settings")
-    @PreAuthorize("hasRole('SOCIETY')")
-    public ResponseEntity<ApiResponse<DeedSettingsResponse>> getDeedSettings(
+    public ResponseEntity<?> getDeedSettings(
             @PathVariable Long deedId,
-            @CurrentUser UserPrincipal currentUser) {
-        
+            @CurrentUser UserPrincipal userPrincipal
+    ) {
         Deed deed = deedService.getDeedById(deedId);
         
-        // Check if the current user is the society that created the deed
-        if (!deed.getSociety().getId().equals(currentUser.getId())) {
+        // Check if the current user is the creator of the deed
+        if (!deed.getCreator().getId().equals(userPrincipal.getId())) {
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("You don't have permission to access these settings")
             );
         }
         
         DeedSettingsResponse settings = deedSettingsService.getDeedSettings(deedId);
-        
-        return ResponseEntity.ok(
-            ApiResponse.success(settings, "Deed settings retrieved successfully")
-        );
+        return ResponseEntity.ok(ApiResponse.success(settings));
     }
     
     /**
-     * Update deed settings
+     * Update deed general settings
      */
     @PutMapping("/{deedId}/settings")
-    @PreAuthorize("hasRole('SOCIETY')")
-    public ResponseEntity<ApiResponse<DeedSettingsResponse>> updateDeedSettings(
+    public ResponseEntity<?> updateDeedSettings(
             @PathVariable Long deedId,
             @Valid @RequestBody DeedSettingsRequest settingsRequest,
-            @CurrentUser UserPrincipal currentUser) {
-        
+            @CurrentUser UserPrincipal userPrincipal
+    ) {
         Deed deed = deedService.getDeedById(deedId);
         
-        // Check if the current user is the society that created the deed
-        if (!deed.getSociety().getId().equals(currentUser.getId())) {
+        // Check if the current user is the creator of the deed
+        if (!deed.getCreator().getId().equals(userPrincipal.getId())) {
             return ResponseEntity.badRequest().body(
                 ApiResponse.error("You don't have permission to update these settings")
             );
         }
         
-        DeedSettingsResponse settings = deedSettingsService.updateDeedSettings(deedId, settingsRequest);
+        deedSettingsService.updateDeedSettings(deedId, settingsRequest);
         
         return ResponseEntity.ok(
-            ApiResponse.success(settings, "Deed settings updated successfully")
+            ApiResponse.success(settingsRequest, "Deed settings updated successfully")
         );
     }
     
     /**
-     * Process registrations from the waitlist
-     * Approves registrations from the waitlist based on available slots
+     * Process waitlisted registrations in bulk 
      * and notifies users of their approval
      */
-    @PostMapping("/{deedId}/settings/process-waitlist")
-    @PreAuthorize("hasRole('SOCIETY')")
-    public ResponseEntity<ApiResponse<Integer>> processWaitlist(
+    @PostMapping("/{deedId}/waitlist/process")
+    public ResponseEntity<?> processWaitlistedRegistrations(
             @PathVariable Long deedId,
-            @CurrentUser UserPrincipal currentUser) {
-        
+            @CurrentUser UserPrincipal userPrincipal
+    ) {
         Deed deed = deedService.getDeedById(deedId);
         
-        // Check if the current user is the society that created the deed
-        if (!deed.getSociety().getId().equals(currentUser.getId())) {
+        // Check if the current user is the creator of the deed
+        if (!deed.getCreator().getId().equals(userPrincipal.getId())) {
             return ResponseEntity.badRequest().body(
-                ApiResponse.error("You don't have permission to process the waitlist")
+                ApiResponse.error("You don't have permission to process waitlisted registrations")
             );
         }
         
         int processedCount = deedSettingsService.processWaitlist(deedId);
         
-        String message = processedCount > 0 
-            ? processedCount + " registration" + (processedCount > 1 ? "s" : "") + " approved successfully" 
+        String message = processedCount > 0
+            ? processedCount + " registration" + (processedCount > 1 ? "s" : "") + " approved successfully"
             : "No registrations were processed";
             
         return ResponseEntity.ok(

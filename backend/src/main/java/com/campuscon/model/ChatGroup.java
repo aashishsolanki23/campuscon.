@@ -3,6 +3,8 @@ package com.campuscon.model;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Builder;
+import lombok.AllArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -11,7 +13,9 @@ import java.util.List;
 import java.util.Set;
 
 @Data
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "chat_groups")
 public class ChatGroup {
@@ -21,6 +25,9 @@ public class ChatGroup {
 
     @Column(nullable = false)
     private String name;
+    
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     @Column(name = "group_image_url")
     private String groupImageUrl;
@@ -37,6 +44,7 @@ public class ChatGroup {
         joinColumns = @JoinColumn(name = "group_id"),
         inverseJoinColumns = @JoinColumn(name = "user_id")
     )
+    @Builder.Default
     private Set<User> members = new HashSet<>();
 
     @ManyToOne
@@ -53,6 +61,7 @@ public class ChatGroup {
     private String collegeName;
 
     @OneToMany(mappedBy = "group", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<GroupMessage> messages = new ArrayList<>();
     
     @PrePersist

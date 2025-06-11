@@ -1,7 +1,9 @@
 package com.campuscon.service;
 
+import com.campuscon.enums.DeedCategory;
 import com.campuscon.model.Deed;
 import com.campuscon.model.DeedComment;
+import com.campuscon.model.DeedRegistration;
 import com.campuscon.model.SavedItem;
 import com.campuscon.model.User;
 import com.campuscon.repository.DeedCommentRepository;
@@ -9,8 +11,9 @@ import com.campuscon.repository.DeedRepository;
 import com.campuscon.repository.SavedItemRepository;
 import com.campuscon.repository.UserRepository;
 import com.campuscon.exception.ResourceNotFoundException;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -22,9 +25,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
+@Slf4j
 public class DeedService {
 
     private final DeedRepository deedRepository;
@@ -34,45 +38,68 @@ public class DeedService {
     private final S3Service s3Service;
     private final NotificationService notificationService;
     private final ModerationService moderationService;
+    private final DeedRegistrationService deedRegistrationService;
 
     @Value("${aws.s3.deeds-bucket}")
     private String deedsBucket;
+    
+    public DeedService(
+            DeedRepository deedRepository,
+            DeedCommentRepository deedCommentRepository,
+            UserRepository userRepository,
+            SavedItemRepository savedItemRepository,
+            S3Service s3Service,
+            NotificationService notificationService,
+            ModerationService moderationService,
+            @Lazy DeedRegistrationService deedRegistrationService) {
+        this.deedRepository = deedRepository;
+        this.deedCommentRepository = deedCommentRepository;
+        this.userRepository = userRepository;
+        this.savedItemRepository = savedItemRepository;
+        this.s3Service = s3Service;
+        this.notificationService = notificationService;
+        this.moderationService = moderationService;
+        this.deedRegistrationService = deedRegistrationService;
+    }
 
     /**
-     * Create a new deed (society event)
+     * Create a new deed (event)
      */
     @Transactional
-    public Deed createDeed(MultipartFile banner, String title, String description, 
-                           LocalDateTime eventDate, String venue, String category, Long societyId) throws IOException {
-        User society = userRepository.findById(societyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Society not found"));
+    public Deed createDeed(String title, String description, MultipartFile banner, 
+                           String category, String venue, LocalDateTime startDateTime, 
+                           LocalDateTime endDateTime, boolean registrationEnabled, Long creatorId) throws IOException {
+        User creator = userRepository.findById(creatorId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        // Verify if user is a society
-        if (!society.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_SOCIETY"))) {
-            throw new IllegalArgumentException("Only societies can create deeds");
-        }
+        // All users can create deeds
 
         // Moderate content before saving
         boolean isContentSafe = moderationService.checkText(title + " " + description);
-        boolean isImageSafe = moderationService.checkImage(banner);
+        boolean isImageSafe = banner != null ? moderationService.checkImage(banner) : true;
 
         if (!isContentSafe || !isImageSafe) {
             throw new IllegalArgumentException("Content violates community guidelines");
         }
 
-        // Upload banner to S3
-        String bannerKey = "deeds/" + UUID.randomUUID().toString();
-        String bannerUrl = s3Service.uploadFile(banner, bannerKey, deedsBucket);
+        // Upload banner to S3 if provided
+        String bannerUrl = null;
+        if (banner != null && !banner.isEmpty()) {
+            String bannerKey = "deeds/" + UUID.randomUUID().toString();
+            bannerUrl = s3Service.uploadFile(banner, bannerKey, deedsBucket);
+        }
 
         // Create deed
         Deed deed = Deed.builder()
                 .title(title)
                 .description(description)
                 .bannerUrl(bannerUrl)
-                .eventDate(eventDate)
+                .startDateTime(startDateTime)
+                .endDateTime(endDateTime)
                 .venue(venue)
-                .category(category)
-                .society(society)
+                .category(DeedCategory.fromDisplayName(category))
+                .createdBy(creator) // Setting the deed creator
+                .registrationEnabled(registrationEnabled)
                 .isModerated(true)
                 .isApproved(true)
                 .build();
@@ -89,27 +116,30 @@ public class DeedService {
     }
 
     /**
-     * Get deeds by society (for society profile)
+     * Get deeds by user (for user profile)
      */
-    public Page<Deed> getSocietyDeeds(Long societyId, Pageable pageable) {
-        User society = userRepository.findById(societyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Society not found"));
+    public Page<Deed> getUserDeeds(Long userId, Pageable pageable) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         
-        return deedRepository.findBySocietyOrderByCreatedAtDesc(society, pageable);
+        return deedRepository.findByCreatorOrderByCreatedAtDesc(user, pageable);
+    }
+    
+    /**
+     * Get deeds by creator ID
+     */
+    public Page<Deed> getDeedsByCreatorId(Long creatorId, Pageable pageable) {
+        User creator = userRepository.findById(creatorId)
+                .orElseThrow(() -> new ResourceNotFoundException("Creator not found"));
+        
+        return deedRepository.findByCreatorOrderByCreatedAtDesc(creator, pageable);
     }
 
     /**
      * Get deeds by college (for home page)
      */
     public Page<Deed> getCollegeDeeds(String collegeName, Pageable pageable) {
-        return deedRepository.findByCollegeNameOrderByEventDateDesc(collegeName, pageable);
-    }
-
-    /**
-     * Get deeds by university (for home page)
-     */
-    public Page<Deed> getUniversityDeeds(String universityName, Pageable pageable) {
-        return deedRepository.findByUniversityNameOrderByEventDateDesc(universityName, pageable);
+        return deedRepository.findByCollegeNameOrderByStartDateTimeDesc(collegeName, pageable);
     }
 
     /**
@@ -122,8 +152,33 @@ public class DeedService {
     /**
      * Get deeds by category
      */
-    public Page<Deed> getDeedsByCategory(String category, Pageable pageable) {
-        return deedRepository.findByCategoryAndIsApprovedTrueOrderByEventDateDesc(category, pageable);
+    public Page<Deed> getDeedsByCategory(String categoryDisplayName, Pageable pageable) {
+        DeedCategory category = DeedCategory.fromDisplayName(categoryDisplayName);
+        return deedRepository.findByCategoryAndIsApprovedTrueOrderByStartDateTimeDesc(category, pageable);
+    }
+    
+    /**
+     * Get deeds with filtering options
+     */
+    public Page<Deed> getDeeds(String category, LocalDateTime startDate, LocalDateTime endDate, String search, Pageable pageable) {
+        if (category != null && !category.isEmpty()) {
+            return getDeedsByCategory(category, pageable);
+        }
+        
+        if (search != null && !search.isEmpty()) {
+            return deedRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCaseOrderByStartDateTimeDesc(
+                search, search, pageable);
+        }
+        
+        if (startDate != null && endDate != null) {
+            return deedRepository.findByStartDateTimeBetweenOrderByStartDateTimeDesc(startDate, endDate, pageable);
+        }
+        
+        if (startDate != null) {
+            return deedRepository.findByStartDateTimeAfterOrderByStartDateTimeDesc(startDate, pageable);
+        }
+        
+        return deedRepository.findByIsApprovedTrueOrderByStartDateTimeDesc(pageable);
     }
 
     /**
@@ -131,56 +186,6 @@ public class DeedService {
      */
     public Page<Deed> getPopularDeeds(Pageable pageable) {
         return deedRepository.findMostPopularDeeds(pageable);
-    }
-
-    /**
-     * Like a deed
-     */
-    @Transactional
-    public void likeDeed(Long deedId, Long userId) {
-        Deed deed = deedRepository.findById(deedId)
-                .orElseThrow(() -> new ResourceNotFoundException("Deed not found"));
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        Set<User> likedByUsers = deed.getLikedByUsers();
-        
-        if (!likedByUsers.contains(user)) {
-            likedByUsers.add(user);
-            deed.incrementLikesCount();
-            deedRepository.save(deed);
-            
-            // Send notification to society if it's not the same user
-            if (!deed.getSociety().getId().equals(userId)) {
-                notificationService.sendDeedLikeNotification(deed.getSociety(), user, deed);
-            }
-        }
-    }
-
-    /**
-     * Unlike a deed
-     */
-    @Transactional
-    public void unlikeDeed(Long deedId, Long userId) {
-        Deed deed = deedRepository.findById(deedId)
-                .orElseThrow(() -> new ResourceNotFoundException("Deed not found"));
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        Set<User> likedByUsers = deed.getLikedByUsers();
-        
-        if (likedByUsers.contains(user)) {
-            likedByUsers.remove(user);
-            deed.decrementLikesCount();
-            deedRepository.save(deed);
-        }
-    }
-
-    /**
-     * Check if user liked a deed
-     */
-    public boolean isLikedByUser(Long deedId, Long userId) {
-        return deedRepository.isLikedByUser(deedId, userId);
     }
 
     /**
@@ -280,9 +285,9 @@ public class DeedService {
 
         DeedComment savedComment = deedCommentRepository.save(comment);
         
-        // Send notification to society if it's not the same user
-        if (!deed.getSociety().getId().equals(userId)) {
-            notificationService.sendDeedCommentNotification(deed.getSociety(), user, deed);
+        // Send notification to creator if it's not the same user
+        if (!deed.getCreatedBy().getId().equals(userId)) {
+            notificationService.sendDeedCommentNotification(deed.getCreatedBy(), user, deed);
         }
         
         return savedComment;
@@ -309,18 +314,47 @@ public class DeedService {
      * Delete a deed
      */
     @Transactional
-    public void deleteDeed(Long deedId, Long societyId) {
+    public void deleteDeed(Long deedId, Long userId) {
         Deed deed = deedRepository.findById(deedId)
                 .orElseThrow(() -> new ResourceNotFoundException("Deed not found"));
         
-        // Only the owner society can delete their deed
-        if (!deed.getSociety().getId().equals(societyId)) {
+        // Verify ownership (only the user who created the deed can delete it)
+        if (!deed.getCreatedBy().getId().equals(userId)) {
             throw new IllegalArgumentException("Not authorized to delete this deed");
         }
         
+        // Get the list of all registered users before deleting registrations
+        List<User> registeredUsers = deedRegistrationService.getDeedRegistrations(deedId, Pageable.unpaged())
+                .stream()
+                .map(DeedRegistration::getUser)
+                .distinct()
+                .collect(Collectors.toList());
+        
+        // Clean up all registrations for this deed manually
+        // This ensures that user group structures are properly cleaned up
+        for (User user : registeredUsers) {
+            try {
+                deedRegistrationService.cancelRegistration(deedId, user.getId());
+                log.info("Cancelled registration for user ID: {} for deed ID: {}", user.getId(), deedId);
+            } catch (Exception e) {
+                log.error("Error cancelling registration for user ID: {} for deed ID: {}", user.getId(), deedId, e);
+            }
+        }
+        
+        // Group structure deletion removed (inGroup system deleted)
+        
+        // Delete any saved references to this deed
+        savedItemRepository.deleteByItemTypeAndItemId(SavedItem.ItemType.DEED, deedId);
+        
         // Delete banner from S3
-        String bannerKey = deed.getBannerUrl().substring(deed.getBannerUrl().lastIndexOf("/") + 1);
-        s3Service.deleteFile(bannerKey, deedsBucket);
+        if (deed.getBannerUrl() != null && !deed.getBannerUrl().isEmpty()) {
+            try {
+                String bannerKey = deed.getBannerUrl().substring(deed.getBannerUrl().lastIndexOf("/") + 1);
+                s3Service.deleteFile(bannerKey, deedsBucket);
+            } catch (Exception e) {
+                log.error("Error deleting banner for deed ID: {}", deedId, e);
+            }
+        }
         
         // Delete the deed (cascades to comments)
         deedRepository.delete(deed);
@@ -342,15 +376,48 @@ public class DeedService {
      * Update a deed
      */
     @Transactional
-    public Deed updateDeed(Deed deed) {
-        if (deed.getId() == null) {
-            throw new IllegalArgumentException("Cannot update a deed without an ID");
+    public Deed updateDeed(Long deedId, String title, String description, MultipartFile banner, 
+                         String categoryDisplayName, String venue, LocalDateTime startDateTime, 
+                         LocalDateTime endDateTime, boolean registrationEnabled, Long userId) throws IOException {
+        // Ensure the deed exists
+        Deed existingDeed = deedRepository.findById(deedId)
+                .orElseThrow(() -> new ResourceNotFoundException("Deed not found with id: " + deedId));
+        
+        // Moderate content before saving
+        boolean isContentSafe = moderationService.checkText(title + " " + description);
+        boolean isImageSafe = banner != null ? moderationService.checkImage(banner) : true;
+
+        if (!isContentSafe || !isImageSafe) {
+            throw new IllegalArgumentException("Content violates community guidelines");
         }
         
-        // Ensure the deed exists
-        deedRepository.findById(deed.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Deed not found with id: " + deed.getId()));
+        // Update basic properties
+        existingDeed.setTitle(title);
+        existingDeed.setDescription(description);
+        existingDeed.setCategory(DeedCategory.fromDisplayName(categoryDisplayName));
+        existingDeed.setVenue(venue);
+        existingDeed.setStartDateTime(startDateTime);
+        existingDeed.setEndDateTime(endDateTime);
+        existingDeed.setRegistrationEnabled(registrationEnabled);
         
-        return deedRepository.save(deed);
+        // Upload banner to S3 if provided
+        if (banner != null && !banner.isEmpty()) {
+            // If there's an existing banner, delete it first
+            if (existingDeed.getBannerUrl() != null && !existingDeed.getBannerUrl().isEmpty()) {
+                try {
+                    String existingBannerKey = existingDeed.getBannerUrl().substring(existingDeed.getBannerUrl().lastIndexOf("/") + 1);
+                    s3Service.deleteFile(existingBannerKey, deedsBucket);
+                } catch (Exception e) {
+                    log.error("Error deleting old banner for deed ID: {}", deedId, e);
+                }
+            }
+            
+            // Upload new banner
+            String bannerKey = "deeds/" + deedId + "/" + UUID.randomUUID().toString();
+            String bannerUrl = s3Service.uploadFile(banner, bannerKey, deedsBucket);
+            existingDeed.setBannerUrl(bannerUrl);
+        }
+        
+        return deedRepository.save(existingDeed);
     }
 }

@@ -28,6 +28,9 @@ public interface SavedItemRepository extends JpaRepository<SavedItem, Long> {
     // Delete saved item by user, type and itemId
     void deleteByUserAndItemTypeAndItemId(User user, SavedItem.ItemType itemType, Long itemId);
     
+    // Delete all saved items by type and itemId (regardless of user)
+    void deleteByItemTypeAndItemId(SavedItem.ItemType itemType, Long itemId);
+    
     // Get item IDs by type for a user
     @Query("SELECT si.itemId FROM SavedItem si WHERE si.user.id = :userId AND si.itemType = :itemType")
     List<Long> findItemIdsByUserIdAndItemType(@Param("userId") Long userId, @Param("itemType") SavedItem.ItemType itemType);

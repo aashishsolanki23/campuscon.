@@ -16,7 +16,7 @@ public class EmailService {
         message.setSubject("CampusCon - Email Verification OTP");
         message.setText("Your OTP for email verification is: " + otp + "\n\n" +
                 "This OTP will expire in 10 minutes.\n\n" +
-                "Welcome to CampusCon - Your College Networking Platform!");
+                "Welcome to CampusCon - Your Academic Networking Platform!");
         
         mailSender.send(message);
     }

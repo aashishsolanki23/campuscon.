@@ -16,7 +16,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;    
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -25,6 +25,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Controller for deed-related operations
+ */
 @RestController
 @RequestMapping("/api/deeds")
 @RequiredArgsConstructor
@@ -32,244 +35,169 @@ public class DeedController {
 
     private final DeedService deedService;
     private final AuthorizationService authorizationService;
+    
+    /**
+     * Get all deeds with optional filtering
+     */
+    @GetMapping
+    public ResponseEntity<ApiResponse<Page<DeedResponse>>> getDeeds(
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDate,
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 10) Pageable pageable,
+            @AuthenticationPrincipal Long userId
+    ) {
+        Page<Deed> deeds = deedService.getDeeds(category, startDate, endDate, search, pageable);
+        Page<DeedResponse> deedResponses = deeds.map(deed -> mapToDeedResponse(deed, userId));
+        return ResponseEntity.ok(ApiResponse.success(deedResponses));
+    }
+    
+    /**
+     * Get all deeds created by a specific user
+     */
+    @GetMapping("/creator/{creatorId}")
+    public ResponseEntity<ApiResponse<Page<DeedResponse>>> getCreatorDeeds(
+            @PathVariable Long creatorId,
+            @PageableDefault(size = 10) Pageable pageable,
+            @AuthenticationPrincipal Long userId
+    ) {
+        Page<Deed> deeds = deedService.getDeedsByCreatorId(creatorId, pageable);
+        Page<DeedResponse> deedResponses = deeds.map(deed -> mapToDeedResponse(deed, userId));
+        return ResponseEntity.ok(ApiResponse.success(deedResponses));
+    }
 
     /**
-     * Create a new deed (society event) with banner upload
-     * Only societies can create deeds
+     * Get a deed by ID
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<DeedResponse>> getDeed(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long userId
+    ) {
+        Deed deed = deedService.getDeedById(id);
+        DeedResponse deedResponse = mapToDeedResponse(deed, userId);
+        return ResponseEntity.ok(ApiResponse.success(deedResponse));
+    }
+    
+    /**
+     * Create a new deed
      */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<DeedResponse>> createDeed(
-            @RequestParam("banner") MultipartFile banner,
             @RequestParam("title") String title,
             @RequestParam("description") String description,
-            @RequestParam("eventDate") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime eventDate,
-            @RequestParam("venue") String venue,
+            @RequestParam(value = "bannerImage", required = false) MultipartFile bannerImage,
             @RequestParam("category") String category,
-            @AuthenticationPrincipal Long societyId) throws IOException {
+            @RequestParam("venue") String venue,
+            @RequestParam(value = "registrationEnabled", defaultValue = "true") boolean registrationEnabled,
+            @RequestParam(value = "startDateTime") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDateTime,
+            @RequestParam(value = "endDateTime") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDateTime,
+            @AuthenticationPrincipal Long userId
+    ) throws IOException {
+        // Check if user is authorized to create a deed (creator role check would be done in the service)
         
-        // Check if user is authorized to create a deed (only societies can)
-        authorizationService.checkDeedCreationPermission(societyId);
+        Deed deed = deedService.createDeed(
+                title, description, bannerImage, 
+                category, venue, startDateTime, 
+                endDateTime, registrationEnabled, userId
+        );
         
-        Deed deed = deedService.createDeed(banner, title, description, eventDate, venue, category, societyId);
-        DeedResponse response = mapToDeedResponse(deed, societyId);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, "Deed created successfully"));
+        DeedResponse deedResponse = mapToDeedResponse(deed, userId);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(deedResponse, "Deed created successfully"));
     }
-
+    
     /**
-     * Get deed by ID
+     * Update an existing deed
      */
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<DeedResponse>> getDeedById(
-            @PathVariable("id") Long id,
-            @AuthenticationPrincipal Long userId) {
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<DeedResponse>> updateDeed(
+            @PathVariable Long id,
+            @RequestParam("title") String title,
+            @RequestParam("description") String description,
+            @RequestParam(value = "bannerImage", required = false) MultipartFile bannerImage,
+            @RequestParam("category") String category,
+            @RequestParam("venue") String venue,
+            @RequestParam(value = "registrationEnabled", defaultValue = "true") boolean registrationEnabled,
+            @RequestParam(value = "startDateTime") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDateTime,
+            @RequestParam(value = "endDateTime") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDateTime,
+            @AuthenticationPrincipal Long userId
+    ) throws IOException {
+        // Check if the user is authorized to update this deed
+        Deed existingDeed = deedService.getDeedById(id);
+        authorizationService.checkDeedModificationPermission(userId, existingDeed.getCreator().getId());
         
-        Deed deed = deedService.getDeedById(id);
-        DeedResponse response = mapToDeedResponse(deed, userId);
-        return ResponseEntity.ok(ApiResponse.success(response, "Deed retrieved successfully"));
+        Deed updatedDeed = deedService.updateDeed(
+                id, title, description, bannerImage, 
+                category, venue, startDateTime, 
+                endDateTime, registrationEnabled, userId
+        );
+        
+        DeedResponse deedResponse = mapToDeedResponse(updatedDeed, userId);
+        return ResponseEntity.ok(ApiResponse.success(deedResponse, "Deed updated successfully"));
     }
-
+    
     /**
-     * Get deeds by society (for society profile)
+     * Delete a deed
      */
-    @GetMapping("/society/{societyId}")
-    public ResponseEntity<ApiResponse<Page<DeedResponse>>> getSocietyDeeds(
-            @PathVariable("societyId") Long profileSocietyId,
-            @PageableDefault(size = 20) Pageable pageable,
-            @AuthenticationPrincipal Long userId) {
-        
-        Page<Deed> deeds = deedService.getSocietyDeeds(profileSocietyId, pageable);
-        Page<DeedResponse> response = deeds.map(deed -> mapToDeedResponse(deed, userId));
-        return ResponseEntity.ok(ApiResponse.success(response, "Society deeds retrieved successfully"));
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteDeed(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long userId
+    ) {
+        deedService.deleteDeed(id, userId);
+        return ResponseEntity.ok(ApiResponse.success(null, "Deed deleted successfully"));
     }
-
+    
     /**
-     * Get deeds by college (for home page)
-     */
-    @GetMapping("/college/{collegeName}")
-    public ResponseEntity<ApiResponse<Page<DeedResponse>>> getCollegeDeeds(
-            @PathVariable("collegeName") String collegeName,
-            @PageableDefault(size = 20) Pageable pageable,
-            @AuthenticationPrincipal Long userId) {
-        
-        Page<Deed> deeds = deedService.getCollegeDeeds(collegeName, pageable);
-        Page<DeedResponse> response = deeds.map(deed -> mapToDeedResponse(deed, userId));
-        return ResponseEntity.ok(ApiResponse.success(response, "College deeds retrieved successfully"));
-    }
-
-    /**
-     * Get deeds by university (for home page)
-     */
-    @GetMapping("/university/{universityName}")
-    public ResponseEntity<ApiResponse<Page<DeedResponse>>> getUniversityDeeds(
-            @PathVariable("universityName") String universityName,
-            @PageableDefault(size = 20) Pageable pageable,
-            @AuthenticationPrincipal Long userId) {
-        
-        Page<Deed> deeds = deedService.getUniversityDeeds(universityName, pageable);
-        Page<DeedResponse> response = deeds.map(deed -> mapToDeedResponse(deed, userId));
-        return ResponseEntity.ok(ApiResponse.success(response, "University deeds retrieved successfully"));
-    }
-
-    /**
-     * Get upcoming deeds
-     */
-    @GetMapping("/upcoming")
-    public ResponseEntity<ApiResponse<Page<DeedResponse>>> getUpcomingDeeds(
-            @PageableDefault(size = 20) Pageable pageable,
-            @AuthenticationPrincipal Long userId) {
-        
-        Page<Deed> deeds = deedService.getUpcomingDeeds(pageable);
-        Page<DeedResponse> response = deeds.map(deed -> mapToDeedResponse(deed, userId));
-        return ResponseEntity.ok(ApiResponse.success(response, "Upcoming deeds retrieved successfully"));
-    }
-
-    /**
-     * Get deeds by category
-     */
-    @GetMapping("/category/{category}")
-    public ResponseEntity<ApiResponse<Page<DeedResponse>>> getDeedsByCategory(
-            @PathVariable("category") String category,
-            @PageableDefault(size = 20) Pageable pageable,
-            @AuthenticationPrincipal Long userId) {
-        
-        Page<Deed> deeds = deedService.getDeedsByCategory(category, pageable);
-        Page<DeedResponse> response = deeds.map(deed -> mapToDeedResponse(deed, userId));
-        return ResponseEntity.ok(ApiResponse.success(response, "Category deeds retrieved successfully"));
-    }
-
-    /**
-     * Get popular deeds (for home page)
-     */
-    @GetMapping("/popular")
-    public ResponseEntity<ApiResponse<Page<DeedResponse>>> getPopularDeeds(
-            @PageableDefault(size = 20) Pageable pageable,
-            @AuthenticationPrincipal Long userId) {
-        
-        Page<Deed> deeds = deedService.getPopularDeeds(pageable);
-        Page<DeedResponse> response = deeds.map(deed -> mapToDeedResponse(deed, userId));
-        return ResponseEntity.ok(ApiResponse.success(response, "Popular deeds retrieved successfully"));
-    }
-
-    /**
-     * Like a deed
-     */
-    @PostMapping("/{id}/like")
-    public ResponseEntity<ApiResponse<Void>> likeDeed(
-            @PathVariable("id") Long id,
-            @AuthenticationPrincipal Long userId) {
-        
-        deedService.likeDeed(id, userId);
-        return ResponseEntity.ok(ApiResponse.success(null, "Deed liked successfully"));
-    }
-
-    /**
-     * Unlike a deed
-     */
-    @DeleteMapping("/{id}/like")
-    public ResponseEntity<ApiResponse<Void>> unlikeDeed(
-            @PathVariable("id") Long id,
-            @AuthenticationPrincipal Long userId) {
-        
-        deedService.unlikeDeed(id, userId);
-        return ResponseEntity.ok(ApiResponse.success(null, "Deed unliked successfully"));
-    }
-
-    /**
-     * Save a deed
-     */
-    @PostMapping("/{id}/save")
-    public ResponseEntity<ApiResponse<Void>> saveDeed(
-            @PathVariable("id") Long id,
-            @AuthenticationPrincipal Long userId) {
-        
-        deedService.saveDeed(id, userId);
-        return ResponseEntity.ok(ApiResponse.success(null, "Deed saved successfully"));
-    }
-
-    /**
-     * Unsave a deed
-     */
-    @DeleteMapping("/{id}/save")
-    public ResponseEntity<ApiResponse<Void>> unsaveDeed(
-            @PathVariable("id") Long id,
-            @AuthenticationPrincipal Long userId) {
-        
-        deedService.unsaveDeed(id, userId);
-        return ResponseEntity.ok(ApiResponse.success(null, "Deed unsaved successfully"));
-    }
-
-    /**
-     * Add comment to a deed
+     * Add a comment to a deed
      */
     @PostMapping("/{id}/comments")
     public ResponseEntity<ApiResponse<DeedCommentResponse>> addComment(
-            @PathVariable("id") Long id,
-            @RequestBody DeedCommentRequest request,
-            @AuthenticationPrincipal Long userId) {
+            @PathVariable Long id,
+            @RequestBody DeedCommentRequest commentRequest,
+            @AuthenticationPrincipal Long userId
+    ) {
+        DeedComment comment = deedService.addComment(
+                id, userId, commentRequest.getContent(), commentRequest.getParentCommentId()
+        );
         
-        DeedComment comment = deedService.addComment(id, userId, request.getContent(), request.getParentCommentId());
-        DeedCommentResponse response = mapToCommentResponse(comment);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, "Comment added successfully"));
+        DeedCommentResponse commentResponse = mapToCommentResponse(comment);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(commentResponse, "Comment added successfully"));
     }
-
+    
     /**
      * Get comments for a deed
      */
     @GetMapping("/{id}/comments")
-    public ResponseEntity<ApiResponse<Page<DeedCommentResponse>>> getDeedComments(
-            @PathVariable("id") Long id,
-            @PageableDefault(size = 20) Pageable pageable) {
-        
+    public ResponseEntity<ApiResponse<Page<DeedCommentResponse>>> getComments(
+            @PathVariable Long id,
+            @PageableDefault(size = 10) Pageable pageable
+    ) {
         Page<DeedComment> comments = deedService.getDeedComments(id, pageable);
-        Page<DeedCommentResponse> response = comments.map(this::mapToCommentResponse);
-        return ResponseEntity.ok(ApiResponse.success(response, "Deed comments retrieved successfully"));
+        Page<DeedCommentResponse> commentResponses = comments.map(this::mapToCommentResponse);
+        return ResponseEntity.ok(ApiResponse.success(commentResponses, "Deed comments retrieved"));
     }
-
+    
     /**
      * Get replies to a comment
      */
     @GetMapping("/comments/{commentId}/replies")
     public ResponseEntity<ApiResponse<List<DeedCommentResponse>>> getCommentReplies(
-            @PathVariable("commentId") Long commentId) {
-        
+            @PathVariable Long commentId
+    ) {
         List<DeedComment> replies = deedService.getCommentReplies(commentId);
-        List<DeedCommentResponse> response = replies.stream()
+        List<DeedCommentResponse> replyResponses = replies.stream()
                 .map(this::mapToCommentResponse)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponse.success(response, "Comment replies retrieved successfully"));
+        
+        return ResponseEntity.ok(ApiResponse.success(replyResponses, "Comment replies retrieved"));
     }
-
+    
     /**
-     * Delete a deed
-     * Only the society that created the deed or an admin can delete it
-     */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteDeed(
-            @PathVariable("id") Long id,
-            @AuthenticationPrincipal Long societyId) {
-        
-        Deed deed = deedService.getDeedById(id);
-        
-        // Check if user is authorized to delete this deed
-        authorizationService.checkDeedModificationPermission(societyId, deed.getSociety().getId());
-        
-        deedService.deleteDeed(id, societyId);
-        return ResponseEntity.ok(ApiResponse.success(null, "Deed deleted successfully"));
-    }
-
-    /**
-     * Share a deed
-     */
-    @PostMapping("/{id}/share")
-    public ResponseEntity<ApiResponse<Void>> shareDeed(
-            @PathVariable("id") Long id) {
-        
-        deedService.shareDeed(id);
-        return ResponseEntity.ok(ApiResponse.success(null, "Deed shared successfully"));
-    }
-
-    /**
-     * Helper method to map Deed entity to DeedResponse DTO
+     * Map a Deed entity to a DeedResponse DTO
      */
     private DeedResponse mapToDeedResponse(Deed deed, Long currentUserId) {
         return DeedResponse.builder()
@@ -277,37 +205,37 @@ public class DeedController {
                 .title(deed.getTitle())
                 .description(deed.getDescription())
                 .bannerUrl(deed.getBannerUrl())
-                .eventDate(deed.getEventDate())
+                .eventDate(deed.getStartDateTime()) // Using startDateTime as eventDate for backward compatibility
                 .venue(deed.getVenue())
-                .category(deed.getCategory())
-                .societyId(deed.getSociety().getId())
-                .societyName(deed.getSociety().getUsername())
+                .category(deed.getCategoryDisplayName())
+                .creatorId(deed.getCreator().getId())
+                .creatorName(deed.getCreator().getUsername())
                 .createdAt(deed.getCreatedAt())
-                .likesCount((int)deed.getLikesCount())
                 .commentsCount((int)deed.getCommentsCount())
                 .savesCount((int)deed.getSavesCount())
                 .sharesCount((int)deed.getSharesCount())
-                .liked(deedService.isLikedByUser(deed.getId(), currentUserId))
                 .saved(deedService.isSavedByUser(deed.getId(), currentUserId))
+                .registrationEnabled(deed.isRegistrationEnabled())
+                .registrationsCount(deed.getRegistrations() != null ? deed.getRegistrations().size() : 0)
+                .startDateTime(deed.getStartDateTime())
+                .endDateTime(deed.getEndDateTime())
                 .build();
     }
-
+    
     /**
-     * Helper method to map DeedComment entity to DeedCommentResponse DTO
+     * Map a DeedComment entity to a DeedCommentResponse DTO
      */
     private DeedCommentResponse mapToCommentResponse(DeedComment comment) {
         DeedCommentResponse response = DeedCommentResponse.builder()
                 .id(comment.getId())
                 .content(comment.getContent())
-                .userId(comment.getUser().getId())
-                .userName(comment.getUser().getUsername())
-                .userProfilePicture(comment.getUser().getProfilePictureUrl())
-                .deedId(comment.getDeed().getId())
+                .userId(comment.getUser() != null ? comment.getUser().getId() : null)
+                .userName(comment.getUser() != null ? comment.getUser().getUsername() : "Unknown User")
+                .userProfilePicture(comment.getUser() != null ? comment.getUser().getProfilePictureUrl() : null)
                 .createdAt(comment.getCreatedAt())
-                .replyCount(comment.getReplies() != null ? comment.getReplies().size() : 0)
                 .updatedAt(comment.getUpdatedAt())
                 .build();
-        
+                
         if (comment.getParentComment() != null) {
             response.setParentCommentId(comment.getParentComment().getId());
         }

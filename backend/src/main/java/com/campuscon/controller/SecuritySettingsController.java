@@ -29,7 +29,7 @@ public class SecuritySettingsController {
      * Get security settings for the current user
      */
     @GetMapping
-    @PreAuthorize("hasRole('USER') or hasRole('SOCIETY')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<SecuritySettingsResponse>> getSecuritySettings(@CurrentUser UserPrincipal currentUser) {
         SecuritySettingsResponse response = securitySettingsService.getSecuritySettings(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success(response, "Security settings retrieved successfully"));
@@ -39,7 +39,7 @@ public class SecuritySettingsController {
      * Update security settings for the current user
      */
     @PutMapping
-    @PreAuthorize("hasRole('USER') or hasRole('SOCIETY')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<SecuritySettingsResponse>> updateSecuritySettings(
             @CurrentUser UserPrincipal currentUser,
             @RequestBody SecuritySettingsRequest request) {
@@ -51,7 +51,7 @@ public class SecuritySettingsController {
      * Get blocked users for the current user
      */
     @GetMapping("/blocked-users")
-    @PreAuthorize("hasRole('USER') or hasRole('SOCIETY')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<List<UserSummaryResponse>>> getBlockedUsers(@CurrentUser UserPrincipal currentUser) {
         List<UserSummaryResponse> blockedUsers = securitySettingsService.getBlockedUsers(currentUser.getId());
         return ResponseEntity.ok(ApiResponse.success(blockedUsers, "Blocked users retrieved successfully"));
@@ -61,7 +61,7 @@ public class SecuritySettingsController {
      * Block a user
      */
     @PostMapping("/block-user/{userId}")
-    @PreAuthorize("hasRole('USER') or hasRole('SOCIETY')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<Void>> blockUser(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable Long userId,
@@ -74,7 +74,7 @@ public class SecuritySettingsController {
      * Unblock a user
      */
     @DeleteMapping("/unblock-user/{userId}")
-    @PreAuthorize("hasRole('USER') or hasRole('SOCIETY')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<Void>> unblockUser(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable Long userId) {
@@ -86,7 +86,7 @@ public class SecuritySettingsController {
      * Check if a user is blocked
      */
     @GetMapping("/is-blocked/{userId}")
-    @PreAuthorize("hasRole('USER') or hasRole('SOCIETY')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<Boolean>> isUserBlocked(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable Long userId) {
@@ -98,7 +98,7 @@ public class SecuritySettingsController {
      * Delete the current user's account
      */
     @DeleteMapping("/account")
-    @PreAuthorize("hasRole('USER') or hasRole('SOCIETY')")
+    @PreAuthorize("hasRole('USER')")
     public ResponseEntity<ApiResponse<Void>> deleteAccount(
             @CurrentUser UserPrincipal currentUser,
             @RequestBody AccountDeletionRequest request) {

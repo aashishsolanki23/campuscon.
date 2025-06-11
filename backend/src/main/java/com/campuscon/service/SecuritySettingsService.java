@@ -182,15 +182,7 @@ public class SecuritySettingsService {
         // Assuming verifyOtp method exists in an OtpService
         // otpService.verifyOtp(user.getEmail(), request.getOtpCode());
         
-        // For society accounts, check if they have any active deeds or other dependencies
-        boolean isSociety = user.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_SOCIETY"));
-        
-        if (isSociety) {
-            // Handle society-specific deletion logic
-            // e.g., check for active deeds, members, etc.
-            // societyService.prepareForDeletion(userId);
-        }
+        // All users are now treated equally, no special handling required for different user types
         
         // Remove related records
         // Note: This assumes cascade delete is set up in the database
@@ -218,8 +210,7 @@ public class SecuritySettingsService {
                 .username(user.getUsername())
                 .name(user.getUsername())
                 .profilePictureUrl(user.getProfilePictureUrl())
-                .societyRole(user.getAuthorities().stream()
-                        .anyMatch(a -> a.getAuthority().equals("ROLE_SOCIETY")))
+                .role("USER") // Default role in unified user model
                 .build();
     }
 }

@@ -38,4 +38,10 @@ public interface BondRepository extends JpaRepository<Bond, Long> {
            "(SELECT b FROM Bond b WHERE ((b.requester = u AND b.receiver = ?1) OR (b.requester = ?1 AND b.receiver = u)) " +
            "AND b.status = 'ACCEPTED')")
     List<User> findBondedUsers(User user);
+    
+    /**
+     * Find all bonds (both as requester and receiver) for a specific user
+     */
+    @Query("SELECT b FROM Bond b WHERE (b.requester = ?1 OR b.receiver = ?1)")
+    List<Bond> findAllBondsForUser(User user);
 }

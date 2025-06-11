@@ -1,18 +1,28 @@
 package com.campuscon.service;
 
+import com.campuscon.dto.bond.BondRequestResponse;
+import com.campuscon.dto.bond.BondedUserResponse;
+import com.campuscon.exception.ResourceNotFoundException;
 import com.campuscon.model.Bond;
 import com.campuscon.model.User;
 import com.campuscon.repository.BondRepository;
 import com.campuscon.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
+/**
+ * Service for managing bonds between users
+ * In the refined bond system, users can only form teams or register together if they have a mutual bond
+ */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BondService {
     private final BondRepository bondRepository;
     private final UserRepository userRepository;
@@ -156,9 +166,128 @@ public class BondService {
     }
     
     /**
+     * Count bonds for user by user ID
+     */
+    public Long countBondsForUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+        return countBonds(user);
+    }
+    
+    /**
      * Check if two users are bonded
      */
     public boolean areUsersBonded(User userOne, User userTwo) {
         return bondRepository.areUsersBonded(userOne, userTwo);
+    }
+    
+    /**
+     * Check if two users are bonded by their IDs
+     * @param userOneId First user ID
+     * @param userTwoId Second user ID
+     * @return True if the users have a mutual bond
+     */
+    public boolean areUsersBondedById(Long userOneId, Long userTwoId) {
+        User userOne = userRepository.findById(userOneId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userOneId));
+        
+        User userTwo = userRepository.findById(userTwoId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userTwoId));
+        
+        return areUsersBonded(userOne, userTwo);
+    }
+    
+    /**
+     * Remove all bonds for a user (used when deleting an account)
+     */
+    @Transactional
+    public void removeAllBondsForUser(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+        
+        // Find all bonds where the user is requester or receiver
+        List<Bond> userBonds = bondRepository.findAllBondsForUser(user);
+        
+        if (!userBonds.isEmpty()) {
+            log.info("Removing {} bonds for user ID: {}", userBonds.size(), userId);
+            bondRepository.deleteAll(userBonds);
+        }
+    }
+    
+    /**
+     * Get a list of bonded users for a user
+     * @param userId User ID
+     * @return List of bonded users as DTOs
+     */
+    public List<BondedUserResponse> getBondedUserResponses(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+        
+        List<User> bondedUsers = getBondedUsers(user);
+        
+        return bondedUsers.stream()
+                .map(bondedUser -> new BondedUserResponse(
+                        bondedUser.getId(),
+                        bondedUser.getUsername(),
+                        bondedUser.getDisplayName(),
+                        bondedUser.getProfilePictureUrl(),
+                        bondedUser.getInstitutionName()
+                ))
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Get pending bond requests for a user
+     * @param userId User ID
+     * @return List of pending bond requests as DTOs
+     */
+    public List<BondRequestResponse> getPendingBondRequestResponses(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+        
+        List<Bond> pendingRequests = getPendingBondRequests(user);
+        
+        return pendingRequests.stream()
+                .map(bond -> new BondRequestResponse(
+                        bond.getId(),
+                        bond.getRequester().getId(),
+                        bond.getRequester().getUsername(),
+                        bond.getRequester().getDisplayName(),
+                        bond.getRequester().getProfilePictureUrl(),
+                        bond.getCreatedAt()
+                ))
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * Validate that all users in a list are bonded with the specified user
+     * Used for team formation validation
+     * @param userId User ID
+     * @param teamMemberIds List of team member user IDs
+     * @return True if all users are bonded with the user
+     */
+    public boolean validateAllUsersAreBonded(Long userId, List<Long> teamMemberIds) {
+        if (teamMemberIds == null || teamMemberIds.isEmpty()) {
+            return true; // No members to check
+        }
+        
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + userId));
+        
+        for (Long memberId : teamMemberIds) {
+            // Skip if the member is the user themselves
+            if (memberId.equals(userId)) {
+                continue;
+            }
+            
+            User member = userRepository.findById(memberId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Team member not found with ID: " + memberId));
+            
+            if (!areUsersBonded(user, member)) {
+                return false; // Found a user who is not bonded
+            }
+        }
+        
+        return true;
     }
 }

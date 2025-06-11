@@ -1,10 +1,12 @@
 package com.campuscon.enums;
 
 /**
- * Represents the role of a user in the CampusCon system
+ * Represents the user types in the CampusCon system
+ * In the simplified user model, users can have multiple types
+ * and are identified by their user_types collection in the database
  */
 public enum UserRole {
-    STUDENT,    // Individual student user
-    SOCIETY,    // College society account
-    ADMIN       // System administrator
+    USER,       // Regular user (default role for all users)
+    ADMIN,      // System administrator
+    MODERATOR   // Content moderator
 }

@@ -1,8 +1,12 @@
 spring:
+  profiles:
+    active: dev
+    include: secrets
+    
   datasource:
     url: jdbc:mysql://localhost:3306/campuscon?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: root
-    password: root
+    username: ${db.username}
+    password: ${db.password}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -16,8 +20,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${mail.username}
+    password: ${mail.password}
     properties:
       mail:
         smtp:
@@ -30,8 +34,8 @@ spring:
     port: 6379
 
 jwt:
-  secret: ${JWT_SECRET:your-256-bit-secret-key-here-minimum-32-characters}
-  expiration: 86400000 # 24 hours in milliseconds
+  secret: ${jwt.secret}
+  expiration: ${jwt.expiration}
 
 server:
   port: 8080
@@ -46,11 +50,22 @@ logging:
     com.campuscon: DEBUG
 
 aws:
-  access-key: ${AWS_ACCESS_KEY}
-  secret-key: ${AWS_SECRET_KEY}
-  region: ${AWS_REGION:ap-south-1}
+  access-key: ${aws.access-key}
+  secret-key: ${aws.secret-key}
+  region: ${aws.region}
   s3:
-    bucket: ${S3_BUCKET_NAME}
+    bucket: ${aws.s3.bucket}
 
 firebase:
-  credentials-file: ${FIREBASE_CREDENTIALS_FILE}
+  credentials-file: ${firebase.credentials-file}
+
+# OpenAPI Configuration
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+  show-actuator: false
+  default-produces-media-type: application/json

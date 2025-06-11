@@ -1,6 +1,11 @@
 package com.campuscon.config;
 
 import com.campuscon.security.JwtRequestFilter;
+import com.campuscon.security.OAuth2AuthenticationFailureHandler;
+import com.campuscon.security.OAuth2AuthenticationSuccessHandler;
+import com.campuscon.security.RestAuthenticationEntryPoint;
+import com.campuscon.service.OAuth2UserService;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -35,6 +40,10 @@ public class SecurityConfig {
 
     private final JwtRequestFilter jwtRequestFilter;
     private final UserDetailsService userDetailsService;
+    private final OAuth2UserService oAuth2UserService;
+    private final OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
+    private final OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
     
     @Value("${cors.allowed-origins:*}")
     private String allowedOrigins;
@@ -59,9 +68,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers("/api/college-domains").permitAll()
-                .requestMatchers("/api/college-domains/university/**").permitAll()
+                .requestMatchers("/api/v1/colleges/**").permitAll()
+                .requestMatchers("/api/fuzzy-match/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
+                .requestMatchers("/oauth2/**").permitAll()
                 // Allow Swagger UI access
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 // Health check endpoints
@@ -76,6 +86,22 @@ public class SecurityConfig {
                 .frameOptions(frame -> frame.sameOrigin())
                 .xssProtection(xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED_MODE_BLOCK))
                 .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.SAME_ORIGIN))
+            )
+            .oauth2Login(oauth2 -> oauth2
+                .authorizationEndpoint(authorization -> authorization
+                    .baseUri("/oauth2/authorize")
+                )
+                .redirectionEndpoint(redirection -> redirection
+                    .baseUri("/oauth2/callback/*")
+                )
+                .userInfoEndpoint(userInfo -> userInfo
+                    .userService(oAuth2UserService)
+                )
+                .successHandler(oAuth2AuthenticationSuccessHandler)
+                .failureHandler(oAuth2AuthenticationFailureHandler)
+            )
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint(restAuthenticationEntryPoint)
             )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
