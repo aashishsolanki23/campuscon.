@@ -210,35 +210,35 @@ public class DeedFormController {
     /**
      * Get deeds specific to the authenticated user's college.
      * 
-     * @param user The authenticated user
-     * @param page Page number for pagination
-     * @param size Page size for pagination
-     * @param sort Sort field and direction for pagination
-     * @return ResponseEntity with paginated college-specific deeds
-     */
-    @GetMapping("/college")
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Page<DeedResponse>>> getCollegeDeeds(
-            @AuthenticationPrincipal User user,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "startDateTime,desc") String sort) {
+    //  * @param user The authenticated user
+    //  * @param page Page number for pagination
+    //  * @param size Page size for pagination
+    //  * @param sort Sort field and direction for pagination
+    //  * @return ResponseEntity with paginated college-specific deeds
+    //  */
+    // @GetMapping("/college")
+    // @PreAuthorize("isAuthenticated()")
+    // public ResponseEntity<ApiResponse<Page<DeedResponse>>> getCollegeDeeds(
+    //         @AuthenticationPrincipal User user,
+    //         @RequestParam(defaultValue = "0") int page,
+    //         @RequestParam(defaultValue = "20") int size,
+    //         @RequestParam(defaultValue = "startDateTime,desc") String sort) {
         
-        // Parse sort parameters
-        String[] sortParams = sort.split(",");
-        String sortField = sortParams[0];
-        Sort.Direction sortDirection = sortParams.length > 1 && sortParams[1].equalsIgnoreCase("desc") ?
-                Sort.Direction.DESC : Sort.Direction.ASC;
+    //     // Parse sort parameters
+    //     String[] sortParams = sort.split(",");
+    //     String sortField = sortParams[0];
+    //     Sort.Direction sortDirection = sortParams.length > 1 && sortParams[1].equalsIgnoreCase("desc") ?
+    //             Sort.Direction.DESC : Sort.Direction.ASC;
         
-        // Create pageable request
-        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortField));
+    //     // Create pageable request
+    //     Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, sortField));
         
-        // Get deeds from service
-        Page<DeedResponse> deeds = deedFormService.getCollegeDeeds(user, pageable);
+    //     // Get deeds from service
+    //     Page<DeedResponse> deeds = deedFormService.getCollegeDeeds(user, pageable);
         
-        // Create response
-        ApiResponse<Page<DeedResponse>> response = ApiResponse.success(deeds);
+    //     // Create response
+    //     ApiResponse<Page<DeedResponse>> response = ApiResponse.success(deeds);
         
-        return ResponseEntity.ok(response);
-    }
+    //     return ResponseEntity.ok(response);
+    // }
 }

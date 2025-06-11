@@ -5,6 +5,13 @@ package com.campuscon.enums;
  * This represents all possible categories of deeds in the CampusCon platform.
  */
 public enum DeedCategory {
+    
+    //sorted categories
+    WEBINARS("Webinars&workshops"),
+    GENERAL("General&Case Competitions"),
+    INNOVATIONS("Innovations Challenges"),
+    QUIZZES("Quizzes"),
+    HACKATHONS("Hackathons & Coding Challenges"),
     // Academic categories
     TECHNICAL("Technical"),
     ACADEMIC("Academic"),

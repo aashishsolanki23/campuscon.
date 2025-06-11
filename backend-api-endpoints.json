@@ -640,11 +640,64 @@
           "path_params": ["messageId"]
         }
       ]
+    },
+    "tickets": {
+      "base_path": "/api/tickets",
+      "description": "Ticket management for events and deeds",
+      "endpoints": [
+        {
+          "method": "GET",
+          "path": "/user/{userId}",
+          "description": "Get all tickets for a specific user",
+          "requires_auth": true,
+          "path_params": ["userId"]
+        },
+        {
+          "method": "GET",
+          "path": "/code/{ticketCode}",
+          "description": "Get a ticket by its unique code",
+          "requires_auth": true,
+          "path_params": ["ticketCode"]
+        },
+        {
+          "method": "GET",
+          "path": "/deed/{deedId}",
+          "description": "Get all tickets for a specific deed",
+          "requires_auth": true,
+          "path_params": ["deedId"]
+        },
+        {
+          "method": "GET",
+          "path": "/user/{userId}/deed/{deedId}",
+          "description": "Get a user's ticket for a specific deed",
+          "requires_auth": true,
+          "path_params": ["userId", "deedId"]
+        },
+        {
+          "method": "POST",
+          "path": "/generate/{userId}/{deedId}",
+          "description": "Manually generate a ticket for a user and deed",
+          "requires_auth": true,
+          "path_params": ["userId", "deedId"]
+        }
+      ]
+    },
+    "ai_description": {
+      "base_path": "/api/ai",
+      "description": "AI-powered content generation using Gemini AI",
+      "endpoints": [
+        {
+          "method": "POST",
+          "path": "/generate-description",
+          "description": "Generate an AI-powered description for deeds and events using Gemini AI",
+          "requires_auth": true
+        }
+      ]
     }
   },
   "metadata": {
-    "generated_at": "2025-06-11T17:20:31+05:30",
-    "total_rest_endpoints": 89,
+    "generated_at": "2025-06-12T02:57:19+05:30",
+    "total_rest_endpoints": 95,
     "total_websocket_mappings": 5,
     "authentication_required": "Most endpoints require JWT authentication via Authorization header",
     "base_url": "Depends on deployment (typically http://localhost:8080 for development)",

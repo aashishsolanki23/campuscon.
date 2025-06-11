@@ -10,8 +10,8 @@ services:
       - redis
     environment:
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/campuscon?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=root
+      - SPRING_DATASOURCE_USERNAME=campuscon
+      - SPRING_DATASOURCE_PASSWORD=JumpyFrogs&SingingBirds23
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
       - AWS_ACCESS_KEY=${AWS_ACCESS_KEY}
@@ -30,7 +30,9 @@ services:
     image: mysql:8.0
     environment:
       - MYSQL_DATABASE=campuscon
-      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_ROOT_PASSWORD=JumpyFrogs&SingingBirds23
+      - MYSQL_USER=campuscon
+      - MYSQL_PASSWORD=JumpyFrogs&SingingBirds23
     ports:
       - "3306:3306"
     volumes:

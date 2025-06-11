@@ -19,18 +19,23 @@ import com.campuscon.dto.deed.registration.DeedRegistrationResponse;
 import com.campuscon.dto.deed.registration.DeedRegistrationCountsResponse;
 import com.campuscon.dto.PagedResponse;
 import com.campuscon.model.DeedRegistration;
+import com.campuscon.model.Ticket;
 import com.campuscon.security.CurrentUser;
 import com.campuscon.security.UserPrincipal;
 import com.campuscon.service.DeedRegistrationService;
+import com.campuscon.service.TicketService;
 import com.campuscon.util.AppConstants;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/deed-registrations")
 @RequiredArgsConstructor
+@Slf4j
 public class DeedRegistrationController {
     
     private final DeedRegistrationService deedRegistrationService;
+    private final TicketService ticketService;
 
     @PostMapping
     @PreAuthorize("hasRole('USER')")
@@ -46,8 +51,22 @@ public class DeedRegistrationController {
                 registrationRequest.getAdditionalInfo()
         );
         
+        // Automatically generate ticket for the registration
+        try {
+            Ticket ticket = ticketService.generateTicket(
+                currentUser.getId(), 
+                registrationRequest.getDeedId()
+            );
+            log.info("Generated ticket {} for user {} registration to deed {}", 
+                ticket.getTicketCode(), currentUser.getId(), registrationRequest.getDeedId());
+        } catch (Exception e) {
+            log.error("Failed to generate ticket for user {} and deed {}", 
+                currentUser.getId(), registrationRequest.getDeedId(), e);
+            // Continue with registration even if ticket generation fails
+        }
+        
         return ResponseEntity.ok(ApiResponse.success(
-                convertToResponse(registration), "Successfully registered for deed"));
+                convertToResponse(registration), "Successfully registered for deed and ticket generated"));
     }
 
     @GetMapping("/deed/{deedId}")

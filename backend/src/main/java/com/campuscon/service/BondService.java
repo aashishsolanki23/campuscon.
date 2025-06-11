@@ -231,7 +231,7 @@ public class BondService {
                         bondedUser.getUsername(),
                         bondedUser.getDisplayName(),
                         bondedUser.getProfilePictureUrl(),
-                        bondedUser.getInstitutionName()
+                        bondedUser.getCollegeName()
                 ))
                 .collect(Collectors.toList());
     }

@@ -21,17 +21,17 @@ public class EmailService {
         mailSender.send(message);
     }
 
-    public void sendSocietyVerificationEmail(String toEmail, String societyName, String verificationLink) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(toEmail);
-        message.setSubject("CampusCon - Society Verification Request");
-        message.setText("Dear Society President,\n\n" +
-                "A request has been made to register " + societyName + " on CampusCon.\n\n" +
-                "Please click the following link to verify and approve the society registration:\n" +
-                verificationLink + "\n\n" +
-                "If you did not request this registration, please ignore this email.\n\n" +
-                "Best regards,\nCampusCon Team");
+    // public void sendSocietyVerificationEmail(String toEmail, String societyName, String verificationLink) {
+    //     SimpleMailMessage message = new SimpleMailMessage();
+    //     message.setTo(toEmail);
+    //     message.setSubject("CampusCon - Society Verification Request");
+    //     message.setText("Dear Society President,\n\n" +
+    //             "A request has been made to register " + societyName + " on CampusCon.\n\n" +
+    //             "Please click the following link to verify and approve the society registration:\n" +
+    //             verificationLink + "\n\n" +
+    //             "If you did not request this registration, please ignore this email.\n\n" +
+    //             "Best regards,\nCampusCon Team");
         
-        mailSender.send(message);
-    }
+    //     mailSender.send(message);
+    // }
 }

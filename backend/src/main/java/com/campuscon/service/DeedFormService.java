@@ -15,7 +15,7 @@ import com.campuscon.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
+// import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -156,32 +156,32 @@ public class DeedFormService {
         return deedPage.map(DeedResponse::fromEntity);
     }
     
-    /**
-     * Get deeds specific to a user's college
-     * 
-     * @param user The authenticated user
-     * @param pageable Pagination information
-     * @return Page of college-specific deed responses
-     */
-    public Page<DeedResponse> getCollegeDeeds(User user, Pageable pageable) {
-        // Get the user's college name
-        String collegeName = user.getCollegeName();
+    // /**
+    //  * Get deeds specific to a user's college
+    //  * 
+    //  * @param user The authenticated user
+    //  * @param pageable Pagination information
+    //  * @return Page of college-specific deed responses
+    //  */
+    // public Page<DeedResponse> getCollegeDeeds(User user, Pageable pageable) {
+    //     // Get the user's college name
+    //     String collegeName = user.getCollegeName();
         
-        if (collegeName == null || collegeName.isEmpty()) {
-            // If user has no college, return an empty page
-            return new PageImpl<>(new ArrayList<>(), pageable, 0);
-        }
+    //     if (collegeName == null || collegeName.isEmpty()) {
+    //         // If user has no college, return an empty page
+    //         return new PageImpl<>(new ArrayList<>(), pageable, 0);
+    //     }
         
-        // Find deeds for this college
-        // This would typically involve a repository method like:
-        // Page<Deed> deedPage = deedRepository.findByCollegeName(collegeName, pageable);
+    //     // Find deeds for this college
+    //     // This would typically involve a repository method like:
+    //     // Page<Deed> deedPage = deedRepository.findByCollegeName(collegeName, pageable);
         
-        // For now, use a simplified version that returns all deeds
-        // In a real implementation, you would filter by college
-        Page<Deed> deedPage = deedRepository.findAll(pageable);
+    //     // For now, use a simplified version that returns all deeds
+    //     // In a real implementation, you would filter by college
+    //     Page<Deed> deedPage = deedRepository.findAll(pageable);
         
-        return deedPage.map(DeedResponse::fromEntity);
-    }
+    //     return deedPage.map(DeedResponse::fromEntity);
+    // }
     
     /**
      * Approve a deed (admin only)

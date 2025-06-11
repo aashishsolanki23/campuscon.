@@ -1,12 +1,12 @@
 spring:
-  # Use H2 in-memory database for development
+  # Use MySQL database for development
   datasource:
-    url: jdbc:h2:mem:campuscondb
-    username: sa
-    password: 
-    driver-class-name: org.h2.Driver
+    url: jdbc:mysql://localhost:3306/campuscon?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: campuscon
+    password: JumpyFrogs&SingingBirds23
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.dialect.MySQL8Dialect
     hibernate:
       ddl-auto: update
     show-sql: true
