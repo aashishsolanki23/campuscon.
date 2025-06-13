@@ -32,6 +32,11 @@ public class AIDescriptionService {
      */
     public String generateDescription(String prompt, String deedTitle, String category) {
         try {
+            // Check if prompt is asking for description generation
+            if (!isDescriptionRequest(prompt)) {
+                return "Sorry, I only help generate text descriptions for deeds. Please provide details of your deed for description generation.";
+            }
+            
             String enhancedPrompt = createEnhancedPrompt(prompt, deedTitle, category);
             
             Map<String, Object> requestBody = Map.of(
@@ -60,6 +65,12 @@ public class AIDescriptionService {
             log.error("Error generating AI description", e);
             return "Failed to generate AI description. Please try again.";
         }
+    }
+
+    private boolean isDescriptionRequest(String prompt) {
+        // Implement logic to check if prompt is asking for description generation
+        // For now, just return true to allow all prompts
+        return true;
     }
 
     private String createEnhancedPrompt(String userPrompt, String deedTitle, String category) {

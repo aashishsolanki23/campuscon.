@@ -35,6 +35,7 @@ public class SemanticSearchService {
     private static final String DEED_EMBEDDING_KEY_PREFIX = "deed:embedding:";
     private static final String DEED_TITLE_EMBEDDING_KEY_PREFIX = "deed:title:embedding:";
     private static final String DEED_DESCRIPTION_EMBEDDING_KEY_PREFIX = "deed:description:embedding:";
+    private static final String DEED_VENUE_EMBEDDING_KEY_PREFIX = "deed:venue:embedding:";
     
     /**
      * Initialize Redis with vector similarity search capabilities
@@ -50,19 +51,23 @@ public class SemanticSearchService {
      * @param deed The deed to generate embeddings for
      */
     public void processAndStoreDeedEmbeddings(Deed deed) {
-        // Generate embeddings for title and description
+        // Generate embeddings for title, description, and venue
         float[] titleEmbedding = embeddingService.generateEmbedding(deed.getTitle());
         float[] descriptionEmbedding = embeddingService.generateEmbedding(deed.getDescription());
+        float[] venueEmbedding = embeddingService.generateEmbedding(deed.getVenue() != null ? deed.getVenue() : "");
         
         // Store embeddings in Redis
         storeTitleEmbedding(deed.getId(), titleEmbedding);
         storeDescriptionEmbedding(deed.getId(), descriptionEmbedding);
+        storeVenueEmbedding(deed.getId(), venueEmbedding);
         
-        // Also store a combined embedding for faster search
-        float[] combinedEmbedding = combineEmbeddings(titleEmbedding, descriptionEmbedding);
+        // Create a comprehensive combined embedding including venue
+        String combinedText = deed.getTitle() + " " + deed.getDescription() + " " + 
+                             (deed.getVenue() != null ? deed.getVenue() : "");
+        float[] combinedEmbedding = embeddingService.generateEmbedding(combinedText);
         storeCombinedEmbedding(deed.getId(), combinedEmbedding);
         
-        log.info("Stored embeddings for deed: {}", deed.getId());
+        log.info("Stored embeddings for deed: {} including venue information", deed.getId());
     }
     
     /**
@@ -82,6 +87,16 @@ public class SemanticSearchService {
      */
     private void storeDescriptionEmbedding(Long deedId, float[] embedding) {
         String key = DEED_DESCRIPTION_EMBEDDING_KEY_PREFIX + deedId;
+        storeEmbedding(key, embedding);
+    }
+    
+    /**
+     * Store a venue embedding in Redis
+     * @param deedId The deed ID
+     * @param embedding The embedding vector
+     */
+    private void storeVenueEmbedding(Long deedId, float[] embedding) {
+        String key = DEED_VENUE_EMBEDDING_KEY_PREFIX + deedId;
         storeEmbedding(key, embedding);
     }
     
@@ -136,19 +151,34 @@ public class SemanticSearchService {
     }
     
     /**
-     * Combine title and description embeddings
+     * Combine title and description embeddings (legacy support)
      * @param titleEmbedding Title embedding
      * @param descriptionEmbedding Description embedding
      * @return Combined embedding
      */
     private float[] combineEmbeddings(float[] titleEmbedding, float[] descriptionEmbedding) {
-        // Simple weighted average: 60% title, 40% description
-        float titleWeight = 0.6f;
-        float descriptionWeight = 0.4f;
+        // Call the three-parameter version with null for venue
+        return combineEmbeddings(titleEmbedding, descriptionEmbedding, null);
+    }
+    
+    /**
+     * Combine title, description, and venue embeddings
+     * @param titleEmbedding Title embedding
+     * @param descriptionEmbedding Description embedding
+     * @param venueEmbedding Venue embedding (optional)
+     * @return Combined embedding
+     */
+    private float[] combineEmbeddings(float[] titleEmbedding, float[] descriptionEmbedding, float[] venueEmbedding) {
+        // Weighted average: 50% title, 30% description, 20% venue (if provided)
+        float titleWeight = 0.5f;
+        float descriptionWeight = 0.3f;
+        float venueWeight = 0.2f;
         
         float[] combined = new float[titleEmbedding.length];
         for (int i = 0; i < combined.length; i++) {
-            combined[i] = titleEmbedding[i] * titleWeight + descriptionEmbedding[i] * descriptionWeight;
+            combined[i] = titleEmbedding[i] * titleWeight + 
+                         descriptionEmbedding[i] * descriptionWeight + 
+                         (venueEmbedding != null ? venueEmbedding[i] * venueWeight : 0f);
         }
         
         return combined;

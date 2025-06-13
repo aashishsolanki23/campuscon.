@@ -67,6 +67,7 @@ public class DeedFormRequest {
     
     // Additional fields required by DeedFormService
     private String thumbnailUrl;
+    private List<String> additionalImages; // Support for multiple pictures
     private String firstPrize;
     private String secondPrize;
     private String thirdPrize;
