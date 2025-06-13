@@ -148,9 +148,9 @@ public class User implements UserDetails, OAuth2User {
         return this.isEmailVerified;
     }
     
-    public boolean isSociety() {
-        return this.isSociety;
-    }
+    // public boolean isSociety() {
+    //     return this.isSociety;
+    // }
     
     // OAuth2User implementation
     @Override

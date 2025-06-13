@@ -1,7 +1,7 @@
 spring:
   # Use MySQL database for development
   datasource:
-    url: jdbc:mysql://localhost:3306/campuscon?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://campuscon.cdc8wgaiqd1r.eu-north-1.rds.amazonaws.com:3306/campuscon?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: campuscon
     password: JumpyFrogs&SingingBirds23
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -20,6 +20,13 @@ spring:
     redis:
       host: localhost
       port: 6379
+      timeout: 2000
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1
       enabled: false
 
   # Mail configuration (set to dummy values for dev)
@@ -48,3 +55,15 @@ logging:
     org.springframework.web: INFO
     org.springframework.security: DEBUG
     org.springframework.messaging: DEBUG
+
+# QR Code Configuration
+app:
+  qr:
+    storage:
+      path: uploads/qr-codes
+    base64:
+      enabled: true
+# Gemini AI Configuration
+  gemini:
+    api:
+      key: AIzaSyCYTi7-YbDYLnUOFONE4630KaPZ1ElgPzc

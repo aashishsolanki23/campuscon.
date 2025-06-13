@@ -40,12 +40,13 @@ public class RegisterRequest {
     private String bio;
     
     // Custom user URLs
-    private Map<String, String> customUrls = new HashMap<String, String>();
+    @Builder.Default
+    private Map<String, String> customUrls = new HashMap<>();
     
     // Authentication method
+    @Builder.Default
     private boolean googleAuth = false;  // Flag to indicate if user signed up with Google
     
     // User types (system will set default USER type)
     private List<String> userTypes;
 }
-

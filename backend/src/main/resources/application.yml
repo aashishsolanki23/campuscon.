@@ -32,6 +32,13 @@ spring:
   redis:
     host: localhost
     port: 6379
+    timeout: 2000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 0
+        max-wait: -1
 
 jwt:
   secret: ${jwt.secret}
@@ -58,6 +65,40 @@ aws:
 
 firebase:
   credentials-file: ${firebase.credentials-file}
+
+# Google Sheet Integration
+google:
+  sheet:
+    colleges:
+      url: https://docs.google.com/spreadsheets/d/e/YOUR_SHEET_ID/pub?output=csv
+
+# Schedule settings for synchronization
+spring:
+  task:
+    scheduling:
+      pool:
+        size: 5
+
+# OAuth2 Client Settings
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: your-google-client-id
+            client-secret: your-google-client-secret
+            scope: email,profile
+          facebook:
+            client-id: your-facebook-client-id
+            client-secret: your-facebook-client-secret
+            scope: email,public_profile
+
+# CORS Settings
+cors:
+  allowed-origins: http://localhost:3000,https://campuscon.com
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: '*'
+  allow-credentials: true
 
 # OpenAPI Configuration
 springdoc:

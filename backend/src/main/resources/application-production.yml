@@ -1,7 +1,7 @@
 spring:
   # Database configuration for production
   datasource:
-    url: jdbc:mysql://${RDS_HOSTNAME:localhost}:${RDS_PORT:3306}/${RDS_DB_NAME:campuscon}
+    url: jdbc:mysql://${RDS_HOSTNAME:campuscon.cdc8wgaiqd1r.eu-north-1.rds.amazonaws.com}:${RDS_PORT:3306}/${RDS_DB_NAME:campusconDB}
     username: ${RDS_USERNAME:campuscon}
     password: ${RDS_PASSWORD:JumpyFrogs&SingingBirds23}
     hikari:
@@ -27,6 +27,19 @@ spring:
     port: ${REDIS_PORT:6379}
     password: ${REDIS_PASSWORD:JumpyFrogs&SingingBirds23}
     timeout: 2000
+    lettuce:
+      pool:
+        max-active: 20
+        max-idle: 10
+        min-idle: 5
+        max-wait: -1
+        time-between-eviction-runs: 30000
+    ssl: true
+    cluster:
+      nodes: ${REDIS_CLUSTER_NODES:}
+    sentinel:
+      master: ${REDIS_SENTINEL_MASTER:}
+      nodes: ${REDIS_SENTINEL_NODES:}
   
   # Security settings
   security:
@@ -36,16 +49,54 @@ spring:
   
   # Server configuration
   server:
+    port: ${SERVER_PORT:8080}
     error:
       include-stacktrace: never
       include-message: never
     tomcat:
       max-threads: 200
       min-spare-threads: 20
+      max-connections: 8192
+      accept-count: 100
     compression:
       enabled: true
-      mime-types: application/json,application/xml,text/html,text/plain
+      mime-types: application/json,application/xml,text/html,text/plain,text/css,application/javascript
       min-response-size: 2048
+    shutdown: graceful
+
+  # Spring Boot Actuator for monitoring
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: "health,info,metrics,prometheus"
+        base-path: /actuator
+    endpoint:
+      health:
+        show-details: when-authorized
+        probes:
+          enabled: true
+      metrics:
+        enabled: true
+      prometheus:
+        enabled: true
+    metrics:
+      export:
+        prometheus:
+          enabled: true
+      distribution:
+        percentiles-histogram:
+          http.server.requests: true
+        percentiles:
+          http.server.requests: 0.5, 0.95, 0.99
+    tracing:
+      sampling:
+        probability: 0.1
+    health:
+      redis:
+        enabled: true
+      db:
+        enabled: true
 
 # AWS Configuration
 aws:
