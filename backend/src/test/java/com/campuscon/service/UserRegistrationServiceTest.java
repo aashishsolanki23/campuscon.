@@ -3,7 +3,6 @@ package com.campuscon.service;
 import com.campuscon.dto.auth.UserRegistrationRequest;
 import com.campuscon.model.User;
 import com.campuscon.repository.UserRepository;
-import com.campuscon.service.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

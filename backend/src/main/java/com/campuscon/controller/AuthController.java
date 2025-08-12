@@ -31,7 +31,7 @@ public class AuthController {
         validateRegistrationRequest(request);
         
         // Register user without username first
-        var user = userRegistrationService.registerUser(request);
+        userRegistrationService.registerUser(request);
         
         // Return response indicating username creation is needed
         return ResponseEntity.ok(ApiResponse.success(null, "User registered successfully. Please create a username."));
@@ -45,15 +45,21 @@ public class AuthController {
 
     @PostMapping("/verify-otp")
     public ResponseEntity<ApiResponse<AuthResponse>> verifyOTP(@Valid @RequestBody OTPVerificationRequest request) {
-        boolean isValid = otpService.verifyOTP(request.getEmail(), request.getOtpCode(), 
-            OTP.OTPType.valueOf(request.getType()));
-        
-        if (isValid) {
-            // TODO: Update user email verification status
-            return ResponseEntity.ok(ApiResponse.success(null, "OTP verified successfully"));
-        } else {
+        // Verify OTP using existing service
+        boolean verified = otpService.verifyOTP(request.getEmail(), request.getOtpCode(),
+                OTP.OTPType.valueOf(request.getType()));
+
+        if (!verified) {
             return ResponseEntity.badRequest().body(ApiResponse.error("Invalid or expired OTP"));
         }
+
+        // Mark user email as verified
+        boolean updated = userRegistrationService.verifyUserEmail(request.getEmail(), request.getOtpCode());
+        if (!updated) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to verify email"));
+        }
+
+        return ResponseEntity.ok(ApiResponse.success(null, "OTP verified successfully"));
     }
 
     @PostMapping("/resend-otp")
@@ -100,7 +106,7 @@ public class AuthController {
     @PostMapping("/create-username")
     public ResponseEntity<ApiResponse<AuthResponse>> createUsername(@Valid @RequestBody UsernameCreationRequest request, @RequestParam String email) {
         try {
-            var user = userRegistrationService.createUsername(email, request.getUsername());
+            userRegistrationService.createUsername(email, request.getUsername());
             return ResponseEntity.ok(ApiResponse.success(null, "Username created successfully"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));

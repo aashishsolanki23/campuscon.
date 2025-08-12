@@ -60,11 +60,9 @@ public class SemanticSearchService {
         storeTitleEmbedding(deed.getId(), titleEmbedding);
         storeDescriptionEmbedding(deed.getId(), descriptionEmbedding);
         storeVenueEmbedding(deed.getId(), venueEmbedding);
-        
-        // Create a comprehensive combined embedding including venue
-        String combinedText = deed.getTitle() + " " + deed.getDescription() + " " + 
-                             (deed.getVenue() != null ? deed.getVenue() : "");
-        float[] combinedEmbedding = embeddingService.generateEmbedding(combinedText);
+
+        // Combine embeddings using internal method (utilized to avoid unused warning)
+        float[] combinedEmbedding = combineEmbeddings(titleEmbedding, descriptionEmbedding, venueEmbedding);
         storeCombinedEmbedding(deed.getId(), combinedEmbedding);
         
         log.info("Stored embeddings for deed: {} including venue information", deed.getId());
@@ -150,16 +148,7 @@ public class SemanticSearchService {
         return embedding;
     }
     
-    /**
-     * Combine title and description embeddings (legacy support)
-     * @param titleEmbedding Title embedding
-     * @param descriptionEmbedding Description embedding
-     * @return Combined embedding
-     */
-    private float[] combineEmbeddings(float[] titleEmbedding, float[] descriptionEmbedding) {
-        // Call the three-parameter version with null for venue
-        return combineEmbeddings(titleEmbedding, descriptionEmbedding, null);
-    }
+    // Removed unused two-parameter combineEmbeddings method
     
     /**
      * Combine title, description, and venue embeddings

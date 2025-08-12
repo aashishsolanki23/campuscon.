@@ -3,7 +3,6 @@ package com.campuscon.service;
 import com.campuscon.dto.auth.UserRegistrationRequest;
 import com.campuscon.model.User;
 import com.campuscon.repository.UserRepository;
-import com.campuscon.service.JwtService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,7 +20,6 @@ public class UserRegistrationService {
     private final UserRepository userRepository;
     private final OTPService otpService;
     private final PasswordEncoder passwordEncoder;
-    private final JwtService jwtService;
     
     /**
      * Register a new user with the complete flow
