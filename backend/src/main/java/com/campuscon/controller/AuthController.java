@@ -3,8 +3,15 @@ package com.campuscon.controller;
 import com.campuscon.dto.ApiResponse;
 import com.campuscon.dto.auth.AuthResponse;
 import com.campuscon.dto.auth.LoginRequest;
-import com.campuscon.dto.auth.RegisterRequest;
+import com.campuscon.dto.auth.UserRegistrationRequest;
+import com.campuscon.dto.auth.OTPVerificationRequest;
+import com.campuscon.dto.auth.ForgotPasswordRequest;
+import com.campuscon.dto.auth.ResetPasswordRequest;
+import com.campuscon.dto.auth.UsernameCreationRequest;
 import com.campuscon.service.AuthService;
+import com.campuscon.service.OTPService;
+import com.campuscon.service.UserRegistrationService;
+import com.campuscon.model.OTP;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,14 +22,19 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final OTPService otpService;
+    private final UserRegistrationService userRegistrationService;
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> register(@Valid @RequestBody UserRegistrationRequest request) {
         // Validate input based on user type
         validateRegistrationRequest(request);
         
-        AuthResponse response = authService.register(request);
-        return ResponseEntity.ok(ApiResponse.success(response, "User registered successfully"));
+        // Register user without username first
+        var user = userRegistrationService.registerUser(request);
+        
+        // Return response indicating username creation is needed
+        return ResponseEntity.ok(ApiResponse.success(null, "User registered successfully. Please create a username."));
     }
 
     @PostMapping("/login")
@@ -32,17 +44,27 @@ public class AuthController {
     }
 
     @PostMapping("/verify-otp")
-    public ResponseEntity<ApiResponse<AuthResponse>> verifyOTP(
-            @RequestParam String email,
-            @RequestParam String otp) {
-        AuthResponse response = authService.verifyOTP(email, otp);
-        return ResponseEntity.ok(ApiResponse.success(response, "Email verified successfully"));
+    public ResponseEntity<ApiResponse<AuthResponse>> verifyOTP(@Valid @RequestBody OTPVerificationRequest request) {
+        boolean isValid = otpService.verifyOTP(request.getEmail(), request.getOtpCode(), 
+            OTP.OTPType.valueOf(request.getType()));
+        
+        if (isValid) {
+            // TODO: Update user email verification status
+            return ResponseEntity.ok(ApiResponse.success(null, "OTP verified successfully"));
+        } else {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Invalid or expired OTP"));
+        }
     }
 
     @PostMapping("/resend-otp")
-    public ResponseEntity<ApiResponse<Void>> resendOTP(@RequestParam String email) {
-        authService.resendOTP(email);
-        return ResponseEntity.ok(ApiResponse.success(null, "OTP resent successfully"));
+    public ResponseEntity<ApiResponse<Void>> resendOTP(@RequestParam String email, @RequestParam String type) {
+        boolean sent = otpService.generateAndSendOTP(email, OTP.OTPType.valueOf(type));
+        
+        if (sent) {
+            return ResponseEntity.ok(ApiResponse.success(null, "OTP resent successfully"));
+        } else {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to send OTP"));
+        }
     }
     
     // University matching endpoints have been removed as part of the student verification system cleanup
@@ -55,7 +77,7 @@ public class AuthController {
      * @param request The registration request
      * @throws IllegalArgumentException if validation fails
      */
-    private void validateRegistrationRequest(RegisterRequest request) {
+    private void validateRegistrationRequest(UserRegistrationRequest request) {
         // Basic validation is already handled by @Valid annotation
         // Additional custom validations can be added here if needed
     }
@@ -63,4 +85,55 @@ public class AuthController {
     // University and college endpoints have been removed
     
     // Institution-related endpoints have been removed as part of the student verification system cleanup
+    
+    @PostMapping("/send-otp")
+    public ResponseEntity<ApiResponse<Void>> sendOTP(@RequestParam String email, @RequestParam String type) {
+        boolean sent = otpService.generateAndSendOTP(email, OTP.OTPType.valueOf(type));
+        
+        if (sent) {
+            return ResponseEntity.ok(ApiResponse.success(null, "OTP sent successfully"));
+        } else {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to send OTP"));
+        }
+    }
+    
+    @PostMapping("/create-username")
+    public ResponseEntity<ApiResponse<AuthResponse>> createUsername(@Valid @RequestBody UsernameCreationRequest request, @RequestParam String email) {
+        try {
+            var user = userRegistrationService.createUsername(email, request.getUsername());
+            return ResponseEntity.ok(ApiResponse.success(null, "Username created successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(ApiResponse.error(e.getMessage()));
+        }
+    }
+    
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        boolean sent = otpService.generateAndSendOTP(request.getEmail(), OTP.OTPType.PASSWORD_RESET);
+        
+        if (sent) {
+            return ResponseEntity.ok(ApiResponse.success(null, "Password reset OTP sent successfully"));
+        } else {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to send password reset OTP"));
+        }
+    }
+    
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        // Validate passwords match
+        if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Passwords do not match"));
+        }
+        
+        // Verify OTP
+        boolean otpValid = otpService.verifyOTP(request.getEmail(), request.getOtpCode(), OTP.OTPType.PASSWORD_RESET);
+        
+        if (!otpValid) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Invalid or expired OTP"));
+        }
+        
+        // Update password
+        authService.updatePasswordByEmail(request.getEmail(), request.getNewPassword());
+        return ResponseEntity.ok(ApiResponse.success(null, "Password reset successfully"));
+    }
 }

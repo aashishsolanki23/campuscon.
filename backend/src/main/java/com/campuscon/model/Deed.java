@@ -56,6 +56,15 @@ public class Deed {
     @Column(name = "address", columnDefinition = "TEXT")
     private String address;
     
+    @Column(name = "location", columnDefinition = "TEXT")
+    private String location;
+    
+    @Column(name = "latitude")
+    private Double latitude;
+    
+    @Column(name = "longitude")
+    private Double longitude;
+    
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false)
     @Builder.Default
@@ -151,6 +160,9 @@ public class Deed {
     @Column(name = "max_team_size")
     private Integer maxTeamSize;
     
+    @Column(name = "max_participants")
+    private Integer maxParticipants;
+    
     @Column(name = "certificates_provided")
     @Builder.Default
     private boolean certificatesProvided = false;
@@ -187,6 +199,9 @@ public class Deed {
     
     @Column(name = "third_prize", columnDefinition = "TEXT")
     private String thirdPrize;
+    
+    @Column(name = "runner_up_prize", columnDefinition = "TEXT")
+    private String runnerUpPrize;
     
     @OneToMany(mappedBy = "deed", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -323,5 +338,33 @@ public class Deed {
      */
     public void setAllowWaitlist(boolean allowWaitlist) {
         this.allowWaitlist = allowWaitlist;
+    }
+    
+    /**
+     * Getter for maxParticipants
+     */
+    public Integer getMaxParticipants() {
+        return this.maxParticipants;
+    }
+    
+    /**
+     * Setter for maxParticipants
+     */
+    public void setMaxParticipants(Integer maxParticipants) {
+        this.maxParticipants = maxParticipants;
+    }
+    
+    /**
+     * Getter for runnerUpPrize
+     */
+    public String getRunnerUpPrize() {
+        return this.runnerUpPrize;
+    }
+    
+    /**
+     * Setter for runnerUpPrize
+     */
+    public void setRunnerUpPrize(String runnerUpPrize) {
+        this.runnerUpPrize = runnerUpPrize;
     }
 }

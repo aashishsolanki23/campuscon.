@@ -39,10 +39,24 @@ public class User implements UserDetails, OAuth2User {
     private String password;
 
     /**
-     * College name for user profile
+     * College and University relationships
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "college_id")
+    private College college;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "university_id")
+    private University university;
+    
+    /**
+     * Simple string fields for college and university names (for backward compatibility)
      */
     @Column(name = "college_name")
     private String collegeName;
+    
+    @Column(name = "university_name")
+    private String universityName;
     
     @Column(name = "mobile_number")
     private String mobileNumber;
@@ -58,6 +72,9 @@ public class User implements UserDetails, OAuth2User {
     
     @Column(name = "is_society", nullable = false, columnDefinition = "boolean default false")
     private boolean isSociety = false;
+    
+    @Column(name = "is_student_mail", nullable = false, columnDefinition = "boolean default false")
+    private boolean isStudentMail = false;
     
     // Custom URLs storage - for profile links
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

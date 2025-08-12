@@ -300,4 +300,15 @@ public class AuthService {
     }
 
     // The extractRollNumberInfo method has been removed as academic fields are no longer used
+
+    /**
+     * Update a user's password by email (used for password reset with OTP).
+     */
+    @Transactional
+    public void updatePasswordByEmail(String email, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
 }

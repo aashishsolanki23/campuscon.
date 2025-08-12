@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: dev
+    active: local
     include: secrets
     
   datasource:
@@ -39,6 +39,26 @@ spring:
         max-idle: 8
         min-idle: 0
         max-wait: -1
+        
+  # Task scheduling configuration
+  task:
+    scheduling:
+      pool:
+        size: 5
+        
+  # OAuth2 Client Settings
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${oauth2.google.client-id:your-google-client-id}
+            client-secret: ${oauth2.google.client-secret:your-google-client-secret}
+            scope: email,profile
+          facebook:
+            client-id: ${oauth2.facebook.client-id:your-facebook-client-id}
+            client-secret: ${oauth2.facebook.client-secret:your-facebook-client-secret}
+            scope: email,public_profile
 
 jwt:
   secret: ${jwt.secret}
@@ -72,26 +92,25 @@ google:
     colleges:
       url: https://docs.google.com/spreadsheets/d/e/YOUR_SHEET_ID/pub?output=csv
 
-# Schedule settings for synchronization
-spring:
-  task:
-    scheduling:
-      pool:
-        size: 5
+# OTP Configuration
+otp:
+  expiry:
+    minutes: 10
+  length: 6
+  max:
+    attempts:
+      per:
+        hour: 5
 
-# OAuth2 Client Settings
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: your-google-client-id
-            client-secret: your-google-client-secret
-            scope: email,profile
-          facebook:
-            client-id: your-facebook-client-id
-            client-secret: your-facebook-client-secret
-            scope: email,public_profile
+# Embedding API Configuration
+embedding:
+  api:
+    url: ${OPENAI_API_URL:https://api.openai.com/v1/embeddings}
+    key: ${OPENAI_API_KEY:}
+  model: text-embedding-ada-002
+  dimension: 1536
+
+# Schedule settings for synchronization and OAuth2 Client Settings
 
 # CORS Settings
 cors:
