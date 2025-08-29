@@ -74,8 +74,10 @@ public class SecurityConfig {
                 .requestMatchers("/oauth2/**").permitAll()
                 // Allow Swagger UI access
                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                // Health check endpoints
+                // Health check endpoint only
                 .requestMatchers("/actuator/health").permitAll()
+                // Restrict other actuator endpoints to ADMIN
+                .requestMatchers("/actuator/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
@@ -124,23 +126,19 @@ public class SecurityConfig {
 
         return http.build();
     }
-    
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        
-        // In production, use specific origins
         if ("production".equals(activeProfile)) {
             configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         } else {
             configuration.setAllowedOriginPatterns(List.of("*"));
         }
-        
         configuration.setAllowedMethods(Arrays.asList(allowedMethods.split(",")));
         configuration.setAllowedHeaders(Arrays.asList(allowedHeaders.split(",")));
         configuration.setAllowCredentials(allowCredentials);
         configuration.setMaxAge(3600L);
-        
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

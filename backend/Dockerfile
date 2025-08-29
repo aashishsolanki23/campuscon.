@@ -1,25 +1,46 @@
-# Start with a base image containing Java runtime
-FROM eclipse-temurin:17-jdk-alpine
+# ----------- Build stage -----------
+FROM eclipse-temurin:17-jdk-alpine AS builder
+WORKDIR /workspace
+COPY mvnw .
+RUN chmod +x mvnw
+COPY .mvn .mvn
+COPY pom.xml .
+RUN ./mvnw -q -B -DskipTests -e -Dstyle.color=never dependency:go-offline
+COPY src src
+RUN ./mvnw -q -B -DskipTests -e -Dstyle.color=never package
 
-# Add maintainer info
-LABEL maintainer="CampusCon Team"
+# ----------- Runtime stage -----------
+FROM eclipse-temurin:17-jre-alpine
 
-# Add a volume pointing to /tmp
-VOLUME /tmp
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
-# Make port 8080 available to the world outside this container
+# Configure timezone and locale
+ENV TZ=UTC
+
+# Minimal runtime dependencies
+RUN apk add --no-cache curl bash
+
+WORKDIR /app
+
+# Expose application port
 EXPOSE 8080
 
-# Set application's JAR file
-ARG JAR_FILE=target/backend-0.0.1-SNAPSHOT.jar
+# Copy built JAR from builder stage
+ARG JAR_NAME=backend-0.0.1-SNAPSHOT.jar
+COPY --from=builder /workspace/target/${JAR_NAME} app.jar
 
-# Add the application's JAR to the container
-COPY ${JAR_FILE} app.jar
+# Java optimization flags for container
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75 -XX:InitialRAMPercentage=50 -XX:+ExitOnOutOfMemoryError -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp -Dfile.encoding=UTF-8"
 
-# Set up environment variables
-# Use the production profile inside containers
+# Spring profile
 ENV SPRING_PROFILES_ACTIVE=production
-ENV TZ=Asia/Kolkata
 
-# Run the jar file
-ENTRYPOINT ["java","-Djava.security.egd=file:/dev/./urandom","-jar","/app.jar"]
+# Healthcheck
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 CMD curl -f http://localhost:8080/actuator/health || exit 1
+
+# Ensure permissions
+RUN chown -R appuser:appgroup /app
+USER appuser
+
+ENTRYPOINT ["sh","-c","java $JAVA_OPTS -Djava.security.egd=file:/dev/./urandom -jar /app/app.jar"]

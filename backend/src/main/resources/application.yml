@@ -1,20 +1,21 @@
 spring:
   profiles:
-    active: local
-    include: secrets
+    # Do not include secrets by default; include it only in dev profile
+    # include: secrets
     
   datasource:
-    url: jdbc:mysql://localhost:3306/campuscon?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: ${db.username}
-    password: ${db.password}
+    # Database configuration - override with Spring profiles
+    url: ${DB_URL:jdbc:mysql://localhost:3306/campuscon?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
-        format_sql: true
+        format_sql: false
         dialect: org.hibernate.dialect.MySQL8Dialect
 
   mail:
@@ -30,9 +31,9 @@ spring:
             enable: true
 
   redis:
-    host: localhost
-    port: 6379
-    timeout: 2000
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    timeout: ${REDIS_TIMEOUT:2000}
     lettuce:
       pool:
         max-active: 8
@@ -73,8 +74,8 @@ server:
 
 logging:
   level:
-    org.springframework.security: DEBUG
-    com.campuscon: DEBUG
+    org.springframework.security: INFO
+    com.campuscon: INFO
 
 aws:
   access-key: ${aws.access-key}
@@ -83,8 +84,9 @@ aws:
   s3:
     bucket: ${aws.s3.bucket}
 
+# Legacy firebase property (consider using firebase.credentials.* or firebase.config.path)
 firebase:
-  credentials-file: ${firebase.credentials-file}
+  credentials-file: ${firebase.credentials-file:}
 
 # Google Sheet Integration
 google:
@@ -109,8 +111,6 @@ embedding:
     key: ${OPENAI_API_KEY:}
   model: text-embedding-ada-002
   dimension: 1536
-
-# Schedule settings for synchronization and OAuth2 Client Settings
 
 # CORS Settings
 cors:

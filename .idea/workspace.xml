@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="NONE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="04b8d590-8ea4-4a3f-861e-ce9b83d8fdc0" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/auth/blocs/auth/auth_event.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/features/auth/blocs/auth/auth_event.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/auth/screens/login/society_login_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/features/auth/screens/login/society_login_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/auth/screens/login/student_login_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/features/auth/screens/login/student_login_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/auth/screens/registration/common/credentials_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/auth/screens/registration/society/society_basic_info_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/auth/screens/registration/society/society_core_info_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/auth/screens/registration/student/student_basic_info_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/auth/screens/registration/student/student_personal_info_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/auth/screens/starting_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/features/auth/screens/starting_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/bricks/blocs/brick_bloc.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/bricks/blocs/brick_event.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/bricks/blocs/brick_state.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/home/bloc/bricks/bricks_bloc.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/home/bloc/bricks/bricks_event.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/home/bloc/bricks/bricks_state.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/home/bloc/deeds/deeds_bloc.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/home/bloc/deeds/deeds_event.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/home/bloc/deeds/deeds_state.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/home/bloc/home/home_bloc.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/home/bloc/home/home_event.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/home/bloc/home/home_state.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/home/screens/deed_detail_popup.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/home/screens/home_screen.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/features/home/screens/home_screen.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/home/screens/notification_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/home/widgets/brick_card.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/home/widgets/deed_card.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/home/widgets/society_card.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/messages/blocs/message_bloc.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/messages/blocs/message_event.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/messages/blocs/message_state.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/messages/screens/add_friends_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/messages/screens/chat_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/messages/screens/make_group_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/messages/screens/message_home_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/notification/blocs/notification_bloc.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/notification/blocs/notification_event.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/notification/blocs/notification_state.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/profile/blocs/profile_bloc.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/profile/blocs/profile_event.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/profile/blocs/profile_state.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/profile/screens/profile_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/saved/blocs/saved_bloc.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/saved/blocs/saved_event.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/saved/blocs/saved_state.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/saved/screens/saved_items_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/settings/blocs/setting_bloc.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/settings/blocs/setting_event.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/settings/blocs/setting_state.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/features/settings/screens/settings_main_screen.dart" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/linux/flutter/generated_plugin_registrant.cc" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/linux/flutter/generated_plugin_registrant.cc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/linux/flutter/generated_plugins.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/linux/flutter/generated_plugins.cmake" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/macos/Flutter/GeneratedPluginRegistrant.swift" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/macos/Flutter/GeneratedPluginRegistrant.swift" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/pubspec.lock" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/pubspec.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/pubspec.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/windows/flutter/generated_plugin_registrant.cc" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/windows/flutter/generated_plugin_registrant.cc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/windows/flutter/generated_plugins.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/windows/flutter/generated_plugins.cmake" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ClangdSettings">
+    <option name="formatViaClangd" value="false" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 2
+}</component>
+  <component name="ProjectId" id="2uVPmzwtAfqC9liaUVCsZPHrKKQ" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "dart.analysis.tool.window.visible": "false",
+    "git-widget-placeholder": "main",
+    "ignore.virus.scanning.warn.message": "true",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/campuscon",
+    "settings.editor.selected.configurable": "AndroidSdkUpdater"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="04b8d590-8ea4-4a3f-861e-ce9b83d8fdc0" name="Changes" comment="" />
+      <created>1742330931535</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1742330931535</updated>
+    </task>
+    <servers />
+  </component>
+</project>
