@@ -1,4 +1,5 @@
 CampusCon 🎓
+<img width="666" height="620" alt="campusconlogo2copy" src="https://github.com/user-attachments/assets/a1dacad3-4452-4cb3-a256-349d1a768d62" />
 
 CampusCon is a campus networking platform designed to connect students and societies within universities and colleges. It enables seamless registration, communication, event sharing, group chats, and community engagement, all in a secure and scalable ecosystem.
 
